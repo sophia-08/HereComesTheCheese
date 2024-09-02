@@ -2,7 +2,7 @@
   "name": "Ergo",
   "version": "0.1.0",
   "description": "Ergo Companion App",
-  "permissions": ["storage", "tabs"],
+  "permissions": ["storage", "tabs", "scripting","activeTab"],
   "host_permissions": ["https://*/*"],
   "background": {
     "service_worker": "background.js"
@@ -26,10 +26,17 @@
     "default_icon": {
       "16": "assets/ext-icon.png",
       "24": "assets/ext-icon.png",
-      "32": "assets/ext-icon.png"
+      "32": "assets/ext-icon.png",
+            "48": "assets/ext-icon.png",
+      "128": "assets/ext-icon.png"
     },
     "default_title": "Ergo Companion App",
     "default_popup": "popup.html"
+  },
+  "icons": {
+    "16": "assets/ext-icon.png",
+    "48": "assets/ext-icon.png",
+    "128": "assets/ext-icon.png"
   },
   "manifest_version": 3
 }

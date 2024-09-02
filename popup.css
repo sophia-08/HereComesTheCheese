@@ -20,3 +20,23 @@
   outline: 0;
   border-color: #66afe9;
 }
+
+
+body {
+  width: 400px;
+  padding: 10px;
+  font-family: Arial, sans-serif;
+}
+button {
+  margin-bottom: 10px;
+  padding: 5px 10px;
+}
+#deviceList {
+  margin-top: 10px;
+}
+ul {
+  padding-left: 20px;
+}
+li {
+  margin-bottom: 10px;
+}

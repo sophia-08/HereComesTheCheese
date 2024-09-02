@@ -1,5 +1,5 @@
 <link href="popup.css" rel="stylesheet" type="text/css" />
-<script type="module" src="popup.js"></script>
+<!-- <script type="module" src="popup.js"></script>
 
 <div class="container">
   <div>
@@ -7,4 +7,21 @@
 
 
   </div>
-</div>
+</div> -->
+
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HID Device Lister</title>
+</head>
+<body>
+  <h1>HID Device Lister</h1>
+  <button id="listDevices">List Authorized HID Devices</button>
+  <button id="requestNewDevice">Request New HID Device</button>
+  <button id="checkHID">Check HID Availability</button>
+  <div id="deviceList"></div>
+  <div id="result"></div>
+  <script src="popup.js"></script>
+</body>
+</html>
