@@ -16,6 +16,7 @@ document.getElementById('checkHID').addEventListener('click', async () => {
 });
 
 function checkHIDAvailability() {
+  console.log("checkHIDAvailability")
   if ('hid' in navigator) {
     return "WebHID API is available. You can use HID devices on this page.";
   } else {
