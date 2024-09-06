@@ -1,0 +1,10 @@
+
+
+list devices:
+g++ -v -o hid_list hid_list.cpp -lhidapi
+
+use hidapi api to open Ergo and read a report:
+g++ -v -o read_ergo read_ergo.cpp -lhidapi
+
+open Ergo use apple api to read, did not work, open fine, but nothing was read back:
+clang test3.c -o test3 -framework IOKit -framework CoreFoundation
