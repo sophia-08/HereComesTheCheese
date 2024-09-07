@@ -12,6 +12,11 @@
 #include <iomanip>
 #include <queue>
 #include <mutex>
+#include <chrono>
+#include <ctime>
+
+// Added for logging
+#include <fstream>
 
 // Simple JSON class
 class JSON {
@@ -28,20 +33,33 @@ public:
     }
 };
 
+// Added logging function
+void log(const std::string& message) {
+    static std::ofstream logFile("hid_device.log", std::ios::app);
+    auto now = std::chrono::system_clock::now();
+    auto now_c = std::chrono::system_clock::to_time_t(now);
+    logFile << std::put_time(std::localtime(&now_c), "%F %T") << " - " << message << std::endl;
+    std::cout << message << std::endl;  // Also print to console
+}
+
 class HIDDevice;
 
 class UnixDomainSocketServer {
 public:
     UnixDomainSocketServer(const std::string& socket_path) 
-        : m_socket_path(socket_path), m_running(false) {}
+        : m_socket_path(socket_path), m_running(false) {
+        log("UnixDomainSocketServer created with socket path: " + socket_path);
+    }
 
     ~UnixDomainSocketServer() {
         stop();
+        log("UnixDomainSocketServer destroyed");
     }
 
     void start() {
         m_running = true;
         m_thread = std::thread(&UnixDomainSocketServer::run, this);
+        log("UnixDomainSocketServer started");
     }
 
     void stop() {
@@ -53,6 +71,7 @@ public:
             close(m_server_fd);
         }
         unlink(m_socket_path.c_str());
+        log("UnixDomainSocketServer stopped");
     }
 
     void sendToClients(const std::string& message) {
@@ -60,13 +79,14 @@ public:
         for (int client_fd : m_clients) {
             write(client_fd, message.c_str(), message.length());
         }
+        log("Message sent to " + std::to_string(m_clients.size()) + " clients");
     }
 
 private:
     void run() {
         m_server_fd = socket(AF_UNIX, SOCK_STREAM, 0);
         if (m_server_fd < 0) {
-            std::cerr << "Error creating socket" << std::endl;
+            log("Error creating socket");
             return;
         }
 
@@ -77,22 +97,22 @@ private:
 
         unlink(m_socket_path.c_str());
         if (bind(m_server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
-            std::cerr << "Error binding socket" << std::endl;
+            log("Error binding socket");
             return;
         }
 
         if (listen(m_server_fd, 5) < 0) {
-            std::cerr << "Error listening on socket" << std::endl;
+            log("Error listening on socket");
             return;
         }
 
-        std::cout << "Unix Domain Socket server listening on " << m_socket_path << std::endl;
+        log("Unix Domain Socket server listening on " + m_socket_path);
 
         while (m_running) {
             int client_fd = accept(m_server_fd, nullptr, nullptr);
             if (client_fd < 0) {
                 if (m_running) {
-                    std::cerr << "Error accepting connection" << std::endl;
+                    log("Error accepting connection");
                 }
                 continue;
             }
@@ -100,6 +120,7 @@ private:
             {
                 std::lock_guard<std::mutex> lock(m_clients_mutex);
                 m_clients.push_back(client_fd);
+                log("New client connected. Total clients: " + std::to_string(m_clients.size()));
             }
 
             std::thread client_thread(&UnixDomainSocketServer::handleClient, this, client_fd);
@@ -117,11 +138,13 @@ private:
             buffer[bytes_read] = '\0';
             std::string response = processCommand(buffer);
             write(client_fd, response.c_str(), response.length());
+            log("Processed command from client: " + std::string(buffer));
         }
 
         {
             std::lock_guard<std::mutex> lock(m_clients_mutex);
             m_clients.erase(std::remove(m_clients.begin(), m_clients.end(), client_fd), m_clients.end());
+            log("Client disconnected. Total clients: " + std::to_string(m_clients.size()));
         }
         close(client_fd);
     }
@@ -150,14 +173,17 @@ public:
     HIDDevice(IOHIDDeviceRef device, UnixDomainSocketServer* server) 
         : m_device(device), m_server(server) {
         IOHIDDeviceOpen(m_device, kIOHIDOptionsTypeNone);
+        log("HIDDevice created");
     }
 
     ~HIDDevice() {
         IOHIDDeviceClose(m_device, kIOHIDOptionsTypeNone);
+        log("HIDDevice destroyed");
     }
 
     void sendReport(const std::vector<uint8_t>& report) {
         IOHIDDeviceSetReport(m_device, kIOHIDReportTypeOutput, 0, report.data(), report.size());
+        log("Report sent to HID device");
     }
 
     static void inputReportCallback(void* context, IOReturn result, void* sender,
@@ -180,11 +206,13 @@ public:
         });
         
         m_server->sendToClients(jsonReport);
+        log("Input report received and sent to clients. Length: " + std::to_string(reportLength));
     }
 
     void registerInputReportCallback() {
         IOHIDDeviceRegisterInputReportCallback(m_device, m_report, sizeof(m_report),
                                                inputReportCallback, this);
+        log("Input report callback registered");
     }
 
 private:
@@ -203,16 +231,18 @@ public:
         IOHIDManagerOpen(m_manager, kIOHIDOptionsTypeNone);
 
         m_socket_server.start();
+        log("HIDManager created and socket server started");
     }
 
     ~HIDManager() {
         m_socket_server.stop();
         IOHIDManagerClose(m_manager, kIOHIDOptionsTypeNone);
         CFRelease(m_manager);
+        log("HIDManager destroyed");
     }
 
     void run() {
-        std::cout << "Waiting for device connection..." << std::endl;
+        log("Waiting for device connection...");
         CFRunLoopRun();
     }
 
@@ -223,7 +253,7 @@ private:
     }
 
     void handleDeviceAdded(IOHIDDeviceRef device) {
-        std::cout << "Device added" << std::endl;
+        log("Device added");
 
         auto hidDevice = std::make_unique<HIDDevice>(device, &m_socket_server);
         hidDevice->registerInputReportCallback();
@@ -233,6 +263,7 @@ private:
         hidDevice->sendReport(report);
 
         m_devices.push_back(std::move(hidDevice));
+        log("HID device added and initialized");
     }
 
     static CFMutableDictionaryRef createMatchingDictionary() {
@@ -251,6 +282,9 @@ private:
         CFRelease(vidNumber);
         CFRelease(pidNumber);
 
+        log("Matching dictionary created for VendorID: 0x" + std::to_string(vendorID) + 
+            ", ProductID: 0x" + std::to_string(productID));
+
         return dict;
     }
 
@@ -260,7 +294,9 @@ private:
 };
 
 int main() {
+    log("Program started");
     HIDManager manager;
     manager.run();
+    log("Program ended");
     return 0;
 }
