@@ -2,6 +2,12 @@
 #include <iostream>
 #include <vector>
 #include <memory>
+#include <thread>
+#include <sys/socket.h>
+#include <sys/un.h>
+#include <unistd.h>
+#include <cstring>
+#include <atomic>
 
 class HIDDevice {
 public:
@@ -37,16 +43,114 @@ private:
     IOHIDDeviceRef m_device;
 };
 
+class UnixDomainSocketServer {
+public:
+    UnixDomainSocketServer(const std::string& socket_path) 
+        : m_socket_path(socket_path), m_running(false) {}
+
+    ~UnixDomainSocketServer() {
+        stop();
+    }
+
+    void start() {
+        std::cout << "UnixDomainSocketServer start" << std::endl;
+        m_running = true;
+        m_thread = std::thread(&UnixDomainSocketServer::run, this);
+    }
+
+    void stop() {
+        m_running = false;
+        if (m_thread.joinable()) {
+            m_thread.join();
+        }
+        if (m_server_fd >= 0) {
+            close(m_server_fd);
+        }
+        unlink(m_socket_path.c_str());
+    }
+
+private:
+    void run() {
+        m_server_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+        if (m_server_fd < 0) {
+            std::cerr << "Error creating socket" << std::endl;
+            return;
+        }
+
+        struct sockaddr_un server_addr;
+        memset(&server_addr, 0, sizeof(server_addr));
+        server_addr.sun_family = AF_UNIX;
+        strncpy(server_addr.sun_path, m_socket_path.c_str(), sizeof(server_addr.sun_path) - 1);
+
+        unlink(m_socket_path.c_str());
+        if (bind(m_server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr)) < 0) {
+            std::cerr << "Error binding socket" << std::endl;
+            return;
+        }
+
+        if (listen(m_server_fd, 5) < 0) {
+            std::cerr << "Error listening on socket" << std::endl;
+            return;
+        }
+
+        std::cout << "Unix Domain Socket server listening on " << m_socket_path << std::endl;
+
+        while (m_running) {
+            int client_fd = accept(m_server_fd, nullptr, nullptr);
+            if (client_fd < 0) {
+                if (m_running) {
+                    std::cerr << "Error accepting connection" << std::endl;
+                }
+                continue;
+            }
+
+            handleClient(client_fd);
+            close(client_fd);
+        }
+    }
+
+    void handleClient(int client_fd) {
+        char buffer[1024];
+        ssize_t bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
+        if (bytes_read > 0) {
+            buffer[bytes_read] = '\0';
+            std::string response = processCommand(buffer);
+            write(client_fd, response.c_str(), response.length());
+        }
+    }
+
+    std::string processCommand(const std::string& command) {
+        if (command == "status") {
+            return "HID Device is connected";
+        } else if (command.substr(0, 4) == "send") {
+            // Example: send a report to the HID device
+            // In a real implementation, you would parse the command and send the appropriate report
+            return "Report sent to HID device";
+        } else {
+            return "Unknown command";
+        }
+    }
+
+    std::string m_socket_path;
+    std::atomic<bool> m_running;
+    std::thread m_thread;
+    int m_server_fd = -1;
+};
+
 class HIDManager {
 public:
-    HIDManager() : m_manager(IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone)) {
+    HIDManager() : m_manager(IOHIDManagerCreate(kCFAllocatorDefault, kIOHIDOptionsTypeNone)),
+                   m_socket_server("/tmp/hid_device_socket") {
         IOHIDManagerSetDeviceMatching(m_manager, createMatchingDictionary());
         IOHIDManagerRegisterDeviceMatchingCallback(m_manager, deviceAdded, this);
         IOHIDManagerScheduleWithRunLoop(m_manager, CFRunLoopGetCurrent(), kCFRunLoopDefaultMode);
         IOHIDManagerOpen(m_manager, kIOHIDOptionsTypeNone);
+
+        m_socket_server.start();
     }
 
     ~HIDManager() {
+        m_socket_server.stop();
         IOHIDManagerClose(m_manager, kIOHIDOptionsTypeNone);
         CFRelease(m_manager);
     }
@@ -96,6 +200,7 @@ private:
 
     IOHIDManagerRef m_manager;
     std::vector<std::unique_ptr<HIDDevice>> m_devices;
+    UnixDomainSocketServer m_socket_server;
 };
 
 int main() {
