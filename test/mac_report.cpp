@@ -8,40 +8,27 @@
 #include <unistd.h>
 #include <cstring>
 #include <atomic>
+#include <sstream>
+#include <iomanip>
+#include <queue>
+#include <mutex>
 
-class HIDDevice {
+// Simple JSON class
+class JSON {
 public:
-    HIDDevice(IOHIDDeviceRef device) : m_device(device) {
-        IOHIDDeviceOpen(m_device, kIOHIDOptionsTypeNone);
-    }
-
-    ~HIDDevice() {
-        IOHIDDeviceClose(m_device, kIOHIDOptionsTypeNone);
-    }
-
-    void sendReport(const std::vector<uint8_t>& report) {
-        IOHIDDeviceSetReport(m_device, kIOHIDReportTypeOutput, 0, report.data(), report.size());
-    }
-
-    static void inputReportCallback(void* context, IOReturn result, void* sender,
-                                    IOHIDReportType type, uint32_t reportID,
-                                    uint8_t* report, CFIndex reportLength) {
-        std::cout << "Received report: ";
-        for (CFIndex i = 0; i < reportLength; i++) {
-            printf("%02X ", report[i]);
+    static std::string makeObject(const std::vector<std::pair<std::string, std::string>>& pairs) {
+        std::stringstream ss;
+        ss << "{";
+        for (size_t i = 0; i < pairs.size(); ++i) {
+            if (i > 0) ss << ",";
+            ss << "\"" << pairs[i].first << "\":\"" << pairs[i].second << "\"";
         }
-        std::cout << std::endl;
+        ss << "}";
+        return ss.str();
     }
-
-    void registerInputReportCallback() {
-        static uint8_t report[64];  // Adjust size as needed
-        IOHIDDeviceRegisterInputReportCallback(m_device, report, sizeof(report),
-                                               inputReportCallback, nullptr);
-    }
-
-private:
-    IOHIDDeviceRef m_device;
 };
+
+class HIDDevice;
 
 class UnixDomainSocketServer {
 public:
@@ -53,7 +40,6 @@ public:
     }
 
     void start() {
-        std::cout << "UnixDomainSocketServer start" << std::endl;
         m_running = true;
         m_thread = std::thread(&UnixDomainSocketServer::run, this);
     }
@@ -67,6 +53,13 @@ public:
             close(m_server_fd);
         }
         unlink(m_socket_path.c_str());
+    }
+
+    void sendToClients(const std::string& message) {
+        std::lock_guard<std::mutex> lock(m_clients_mutex);
+        for (int client_fd : m_clients) {
+            write(client_fd, message.c_str(), message.length());
+        }
     }
 
 private:
@@ -104,19 +97,33 @@ private:
                 continue;
             }
 
-            handleClient(client_fd);
-            close(client_fd);
+            {
+                std::lock_guard<std::mutex> lock(m_clients_mutex);
+                m_clients.push_back(client_fd);
+            }
+
+            std::thread client_thread(&UnixDomainSocketServer::handleClient, this, client_fd);
+            client_thread.detach();
         }
     }
 
     void handleClient(int client_fd) {
         char buffer[1024];
-        ssize_t bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
-        if (bytes_read > 0) {
+        while (m_running) {
+            ssize_t bytes_read = read(client_fd, buffer, sizeof(buffer) - 1);
+            if (bytes_read <= 0) {
+                break;
+            }
             buffer[bytes_read] = '\0';
             std::string response = processCommand(buffer);
             write(client_fd, response.c_str(), response.length());
         }
+
+        {
+            std::lock_guard<std::mutex> lock(m_clients_mutex);
+            m_clients.erase(std::remove(m_clients.begin(), m_clients.end(), client_fd), m_clients.end());
+        }
+        close(client_fd);
     }
 
     std::string processCommand(const std::string& command) {
@@ -124,7 +131,6 @@ private:
             return "HID Device is connected";
         } else if (command.substr(0, 4) == "send") {
             // Example: send a report to the HID device
-            // In a real implementation, you would parse the command and send the appropriate report
             return "Report sent to HID device";
         } else {
             return "Unknown command";
@@ -135,6 +141,56 @@ private:
     std::atomic<bool> m_running;
     std::thread m_thread;
     int m_server_fd = -1;
+    std::vector<int> m_clients;
+    std::mutex m_clients_mutex;
+};
+
+class HIDDevice {
+public:
+    HIDDevice(IOHIDDeviceRef device, UnixDomainSocketServer* server) 
+        : m_device(device), m_server(server) {
+        IOHIDDeviceOpen(m_device, kIOHIDOptionsTypeNone);
+    }
+
+    ~HIDDevice() {
+        IOHIDDeviceClose(m_device, kIOHIDOptionsTypeNone);
+    }
+
+    void sendReport(const std::vector<uint8_t>& report) {
+        IOHIDDeviceSetReport(m_device, kIOHIDReportTypeOutput, 0, report.data(), report.size());
+    }
+
+    static void inputReportCallback(void* context, IOReturn result, void* sender,
+                                    IOHIDReportType type, uint32_t reportID,
+                                    uint8_t* report, CFIndex reportLength) {
+        auto* device = static_cast<HIDDevice*>(context);
+        device->handleInputReport(report, reportLength);
+    }
+
+    void handleInputReport(uint8_t* report, CFIndex reportLength) {
+        std::stringstream ss;
+        ss << std::hex << std::setfill('0');
+        for (CFIndex i = 0; i < reportLength; i++) {
+            ss << std::setw(2) << static_cast<int>(report[i]);
+        }
+        
+        std::string jsonReport = JSON::makeObject({
+            {"type", "hid_report"},
+            {"data", ss.str()}
+        });
+        
+        m_server->sendToClients(jsonReport);
+    }
+
+    void registerInputReportCallback() {
+        IOHIDDeviceRegisterInputReportCallback(m_device, m_report, sizeof(m_report),
+                                               inputReportCallback, this);
+    }
+
+private:
+    IOHIDDeviceRef m_device;
+    UnixDomainSocketServer* m_server;
+    uint8_t m_report[64];  // Adjust size as needed
 };
 
 class HIDManager {
@@ -169,7 +225,7 @@ private:
     void handleDeviceAdded(IOHIDDeviceRef device) {
         std::cout << "Device added" << std::endl;
 
-        auto hidDevice = std::make_unique<HIDDevice>(device);
+        auto hidDevice = std::make_unique<HIDDevice>(device, &m_socket_server);
         hidDevice->registerInputReportCallback();
 
         // Example: Send a custom report
