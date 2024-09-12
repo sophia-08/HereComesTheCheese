@@ -259,8 +259,8 @@ private:
         hidDevice->registerInputReportCallback();
 
         // Example: Send a custom report
-        std::vector<uint8_t> report = {0x01, 0x02, 0x03};
-        hidDevice->sendReport(report);
+        // std::vector<uint8_t> report = {0x01, 0x02, 0x03};
+        // hidDevice->sendReport(report);
 
         m_devices.push_back(std::move(hidDevice));
         log("HID device added and initialized");
