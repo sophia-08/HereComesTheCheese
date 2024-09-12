@@ -1,0 +1,10 @@
+{
+    "name": "com.ergo",
+    "description": "Ergo's Native Host",
+    "path": "/home/ANT.AMAZON.COM/kendai/workspaces/HereComesTheCheese/ergo.py",
+    "type": "stdio",
+    "allowed_origins": [
+      "chrome-extension:liihncmjaphabbbjjpohfjgnklgchocc/"
+    ]
+  }
+  
