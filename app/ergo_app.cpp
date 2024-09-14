@@ -207,13 +207,15 @@ private:
 class HIDDevice {
 public:
   HIDDevice(IOHIDDeviceRef device, ProxySocketServer *server)
-      : m_device(device), m_server(server) {
+      : m_device(device), m_server(server), m_connected(true) {
     IOHIDDeviceOpen(m_device, kIOHIDOptionsTypeNone);
     log("HIDDevice created");
   }
 
   ~HIDDevice() {
-    IOHIDDeviceClose(m_device, kIOHIDOptionsTypeNone);
+    if (m_connected) {
+      IOHIDDeviceClose(m_device, kIOHIDOptionsTypeNone);
+    }
     log("HIDDevice destroyed");
   }
 
@@ -256,10 +258,27 @@ public:
     log("Input report callback registered");
   }
 
+  void disconnect() {
+    if (m_connected) {
+      IOHIDDeviceClose(m_device, kIOHIDOptionsTypeNone);
+      m_connected = false;
+      log("HIDDevice disconnected");
+    }
+  }
+
+  bool isConnected() const {
+    return m_connected;
+  }
+
+  IOHIDDeviceRef getDevice() const {
+    return m_device;
+  }
+
 private:
   IOHIDDeviceRef m_device;
   ProxySocketServer *m_server;
   uint8_t m_report[64]; // Adjust size as needed
+  bool m_connected;
 };
 
 class HIDManager {
@@ -270,6 +289,7 @@ public:
         m_socket_server("/tmp/hid_device_socket") {
     IOHIDManagerSetDeviceMatching(m_manager, createMatchingDictionary());
     IOHIDManagerRegisterDeviceMatchingCallback(m_manager, deviceAdded, this);
+    IOHIDManagerRegisterDeviceRemovalCallback(m_manager, deviceRemoved, this);
     IOHIDManagerScheduleWithRunLoop(m_manager, CFRunLoopGetCurrent(),
                                     kCFRunLoopDefaultMode);
     IOHIDManagerOpen(m_manager, kIOHIDOptionsTypeNone);
@@ -299,18 +319,45 @@ private:
     manager->handleDeviceAdded(device);
   }
 
+  static void deviceRemoved(void *context, IOReturn result, void *sender,
+                            IOHIDDeviceRef device) {
+    (void)result;
+    (void)sender;
+    auto *manager = static_cast<HIDManager *>(context);
+    manager->handleDeviceRemoved(device);
+  }
+
   void handleDeviceAdded(IOHIDDeviceRef device) {
     log("Device added");
 
     auto hidDevice = std::make_unique<HIDDevice>(device, &m_socket_server);
     hidDevice->registerInputReportCallback();
 
-    // Example: Send a custom report
-    // std::vector<uint8_t> report = {0x01, 0x02, 0x03};
-    // hidDevice->sendReport(report);
-
     m_devices.push_back(std::move(hidDevice));
     log("HID device added and initialized");
+
+    // Notify clients about the new device
+    m_socket_server.sendToClients(JSON::makeObject({{"type", "device_added"}, {"message", "New HID device connected"}}));
+  }
+
+  void handleDeviceRemoved(IOHIDDeviceRef device) {
+    log("Device removed");
+
+    auto it = std::find_if(m_devices.begin(), m_devices.end(),
+                           [device](const std::unique_ptr<HIDDevice>& d) {
+                             return d->getDevice() == device;
+                           });
+
+    if (it != m_devices.end()) {
+      (*it)->disconnect();
+      m_devices.erase(it);
+      log("HID device removed and cleaned up");
+
+      // Notify clients about the removed device
+      m_socket_server.sendToClients(JSON::makeObject({{"type", "device_removed"}, {"message", "HID device disconnected"}}));
+    } else {
+      log("Removed device not found in the device list");
+    }
   }
 
   static CFMutableDictionaryRef createMatchingDictionary() {
