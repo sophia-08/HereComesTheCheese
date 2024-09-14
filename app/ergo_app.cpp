@@ -38,7 +38,7 @@ public:
 // Updated logging class
 class Logger {
 public:
-  static Logger& getInstance() {
+  static Logger &getInstance() {
     static Logger instance;
     return instance;
   }
@@ -46,8 +46,8 @@ public:
   void log(const std::string &message) {
     auto now = std::chrono::system_clock::now();
     auto now_c = std::chrono::system_clock::to_time_t(now);
-    m_logFile << std::put_time(std::localtime(&now_c), "%F %T") << " - " << message
-              << std::endl;
+    m_logFile << std::put_time(std::localtime(&now_c), "%F %T") << " - "
+              << message << std::endl;
     std::cout << message << std::endl; // Also print to console
   }
 
@@ -60,16 +60,14 @@ public:
 private:
   Logger() : m_logFile("ergo_app.log", std::ios::app) {}
   ~Logger() { close(); }
-  Logger(const Logger&) = delete;
-  Logger& operator=(const Logger&) = delete;
+  Logger(const Logger &) = delete;
+  Logger &operator=(const Logger &) = delete;
 
   std::ofstream m_logFile;
 };
 
 // Updated logging function
-void log(const std::string &message) {
-  Logger::getInstance().log(message);
-}
+void log(const std::string &message) { Logger::getInstance().log(message); }
 
 class HIDDevice;
 
@@ -266,13 +264,9 @@ public:
     }
   }
 
-  bool isConnected() const {
-    return m_connected;
-  }
+  bool isConnected() const { return m_connected; }
 
-  IOHIDDeviceRef getDevice() const {
-    return m_device;
-  }
+  IOHIDDeviceRef getDevice() const { return m_device; }
 
 private:
   IOHIDDeviceRef m_device;
@@ -337,14 +331,15 @@ private:
     log("HID device added and initialized");
 
     // Notify clients about the new device
-    m_socket_server.sendToClients(JSON::makeObject({{"type", "device_added"}, {"message", "New HID device connected"}}));
+    m_socket_server.sendToClients(JSON::makeObject(
+        {{"type", "device_added"}, {"message", "New HID device connected"}}));
   }
 
   void handleDeviceRemoved(IOHIDDeviceRef device) {
     log("Device removed");
 
     auto it = std::find_if(m_devices.begin(), m_devices.end(),
-                           [device](const std::unique_ptr<HIDDevice>& d) {
+                           [device](const std::unique_ptr<HIDDevice> &d) {
                              return d->getDevice() == device;
                            });
 
@@ -354,7 +349,9 @@ private:
       log("HID device removed and cleaned up");
 
       // Notify clients about the removed device
-      m_socket_server.sendToClients(JSON::makeObject({{"type", "device_removed"}, {"message", "HID device disconnected"}}));
+      m_socket_server.sendToClients(
+          JSON::makeObject({{"type", "device_removed"},
+                            {"message", "HID device disconnected"}}));
     } else {
       log("Removed device not found in the device list");
     }
