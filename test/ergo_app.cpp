@@ -47,22 +47,22 @@ void log(const std::string &message) {
 
 class HIDDevice;
 
-class UnixDomainSocketServer {
+class ProxySocketServer {
 public:
-  UnixDomainSocketServer(const std::string &socket_path)
+  ProxySocketServer(const std::string &socket_path)
       : m_socket_path(socket_path), m_running(false) {
-    log("UnixDomainSocketServer created with socket path: " + socket_path);
+    log("ProxySocketServer created with socket path: " + socket_path);
   }
 
-  ~UnixDomainSocketServer() {
+  ~ProxySocketServer() {
     stop();
-    log("UnixDomainSocketServer destroyed");
+    log("ProxySocketServer destroyed");
   }
 
   void start() {
     m_running = true;
-    m_thread = std::thread(&UnixDomainSocketServer::run, this);
-    log("UnixDomainSocketServer started");
+    m_thread = std::thread(&ProxySocketServer::run, this);
+    log("ProxySocketServer started");
   }
 
   void stop() {
@@ -74,7 +74,7 @@ public:
       close(m_server_fd);
     }
     unlink(m_socket_path.c_str());
-    log("UnixDomainSocketServer stopped");
+    log("ProxySocketServer stopped");
   }
 
   void sendToClients(const std::string &message) {
@@ -129,7 +129,7 @@ private:
             std::to_string(m_clients.size()));
       }
 
-      std::thread client_thread(&UnixDomainSocketServer::handleClient, this,
+      std::thread client_thread(&ProxySocketServer::handleClient, this,
                                 client_fd);
       client_thread.detach();
     }
@@ -180,7 +180,7 @@ private:
 
 class HIDDevice {
 public:
-  HIDDevice(IOHIDDeviceRef device, UnixDomainSocketServer *server)
+  HIDDevice(IOHIDDeviceRef device, ProxySocketServer *server)
       : m_device(device), m_server(server) {
     IOHIDDeviceOpen(m_device, kIOHIDOptionsTypeNone);
     log("HIDDevice created");
@@ -232,7 +232,7 @@ public:
 
 private:
   IOHIDDeviceRef m_device;
-  UnixDomainSocketServer *m_server;
+  ProxySocketServer *m_server;
   uint8_t m_report[64]; // Adjust size as needed
 };
 
@@ -314,7 +314,7 @@ private:
 
   IOHIDManagerRef m_manager;
   std::vector<std::unique_ptr<HIDDevice>> m_devices;
-  UnixDomainSocketServer m_socket_server;
+  ProxySocketServer m_socket_server;
 };
 
 int main() {
