@@ -13,7 +13,7 @@
 #include <vector>
 
 const std::string SOCKET_PATH = "/tmp/hid_device_socket";
-const std::string LOG_FILE = "socket_communication.log";
+const std::string LOG_FILE = "ergo_proxy.log";
 const int RECONNECT_DELAY = 5; // seconds
 
 std::ofstream log_file;
