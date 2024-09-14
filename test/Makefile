@@ -4,7 +4,7 @@ LDFLAGS = -framework IOKit -framework CoreFoundation
 
 OUTDIR = out
 
-all: $(OUTDIR) $(OUTDIR)/ergo_proxy $(OUTDIR)/mac_report
+all: $(OUTDIR) $(OUTDIR)/ergo_proxy $(OUTDIR)/ergo_app
 
 $(OUTDIR):
 	mkdir -p $(OUTDIR)
@@ -12,7 +12,7 @@ $(OUTDIR):
 $(OUTDIR)/ergo_proxy: ergo_proxy.cpp
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(OUTDIR)/mac_report: mac_report.cpp
+$(OUTDIR)/ergo_app: ergo_app.cpp
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $<
 
 clean:

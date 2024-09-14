@@ -35,7 +35,7 @@ public:
 
 // Added logging function
 void log(const std::string& message) {
-    static std::ofstream logFile("hid_device.log", std::ios::app);
+    static std::ofstream logFile("ergo_app.log", std::ios::app);
     auto now = std::chrono::system_clock::now();
     auto now_c = std::chrono::system_clock::to_time_t(now);
     logFile << std::put_time(std::localtime(&now_c), "%F %T") << " - " << message << std::endl;
@@ -189,6 +189,11 @@ public:
     static void inputReportCallback(void* context, IOReturn result, void* sender,
                                     IOHIDReportType type, uint32_t reportID,
                                     uint8_t* report, CFIndex reportLength) {
+        (void ) result;
+        (void ) type;
+        (void ) sender;
+        (void) reportID;
+
         auto* device = static_cast<HIDDevice*>(context);
         device->handleInputReport(report, reportLength);
     }
@@ -248,6 +253,8 @@ public:
 
 private:
     static void deviceAdded(void* context, IOReturn result, void* sender, IOHIDDeviceRef device) {
+        (void) result;
+        (void) sender;
         auto* manager = static_cast<HIDManager*>(context);
         manager->handleDeviceAdded(device);
     }
