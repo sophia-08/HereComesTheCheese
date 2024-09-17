@@ -1,41 +1,40 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Side Panel</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      padding: 20px;
-    }
-    label {
-      display: inline-block;
-      width: 100px;
-      text-align: right;
-      margin-right: 10px;
-    }
-    input[type="text"], input[type="password"] {
-      padding: 5px;
-      width: 200px;
-    }
-    button {
-      margin-top: 10px;
-      padding: 5px 10px;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ergo Side Panel</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        div {
+            margin-bottom: 10px;
+        }
+        button {
+            margin-top: 10px;
+            margin-right: 10px;
+        }
+    </style>
 </head>
 <body>
-  <div>
-    <label for="username">Username:</label>
-    <input type="text" id="username" placeholder="Enter your username">
-  </div>
-  <div>
-    <label for="password">Password:</label>
-    <input type="password" id="password" placeholder="Enter your password">
-  </div>
-  <button id="submitButton">Submit</button>
-  <button id="sendNativeMessageButton">Send Message to Native Host</button>
+    <div>
+        Username: <input type="text" id="username">
+    </div>
 
-  <script src="side_panel.js"></script>
+    <div>
+        Password: <input type="password" id="password">
+    </div>
+
+    <button id="submitButton">Submit</button>
+
+    <button id="sendNativeMessageButton">Send Message to Native Host</button>
+
+    <button id="queryDOMButton">Query DOM Elements</button>
+
+    <div id="queryResult"></div>
+
+    <script src="side_panel.js"></script>
 </body>
 </html>
