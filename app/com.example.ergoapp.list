@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.example.ergoapp</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/path/to/your/ergo_app</string>
+    </array>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>StandardErrorPath</key>
+    <string>/tmp/ergo_app.err</string>
+    <key>StandardOutPath</key>
+    <string>/tmp/ergo_app.out</string>
+</dict>
+</plist>
+
+
+Save this file as com.example.ergoapp.plist in /Library/LaunchDaemons/ to run as a system-wide daemon, 
+or in ~/Library/LaunchAgents/ to run as a user-specific daemon.
