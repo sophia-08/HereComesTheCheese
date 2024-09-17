@@ -78,10 +78,10 @@ function queryActiveTabDOM() {
 
 // Helper Functions
 function queryDOM() {
-  const inputs = document.querySelectorAll('input');
+  const inputs = Array.from(document.querySelectorAll('input')).filter(input => input.type !== 'hidden');
   const buttons = document.querySelectorAll('button');
   
-  let resultHTML = '<h3>Input Elements:</h3><ul>';
+  let resultHTML = '<h3>Input Elements (excluding hidden):</h3><ul>';
   inputs.forEach((input, index) => {
     resultHTML += `<li>Input ${index + 1}: type="${input.type}", id="${input.id}", name="${input.name}"</li>`;
   });
