@@ -30,6 +30,11 @@ document.getElementById('queryDOMButton').addEventListener('click', () => {
 // Listen for the query results from the background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'queryResults') {
-      document.getElementById('queryResult').innerHTML = message.results;
+      const resultDiv = document.getElementById('queryResult');
+      if (message.results.startsWith("Unable to access") || message.results.startsWith("An error occurred")) {
+          resultDiv.innerHTML = `<p style="color: red;">${message.results}</p>`;
+      } else {
+          resultDiv.innerHTML = message.results;
+      }
   }
 });

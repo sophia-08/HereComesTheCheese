@@ -49,19 +49,30 @@ function sendNativeMessage(message) {
 
 function queryActiveTabDOM() {
   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
-      function: queryDOM,
-    }, (results) => {
-      if (chrome.runtime.lastError) {
-        console.error(chrome.runtime.lastError);
-        return;
-      }
+    if (tabs[0].url.startsWith("chrome://")) {
       chrome.runtime.sendMessage({
         type: 'queryResults',
-        results: results[0].result
+        results: "Unable to access chrome:// URLs. Please try on a different page."
       });
-    });
+    } else {
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        function: queryDOM,
+      }, (results) => {
+        if (chrome.runtime.lastError) {
+          console.error(chrome.runtime.lastError);
+          chrome.runtime.sendMessage({
+            type: 'queryResults',
+            results: "An error occurred while querying the DOM: " + chrome.runtime.lastError.message
+          });
+          return;
+        }
+        chrome.runtime.sendMessage({
+          type: 'queryResults',
+          results: results[0].result
+        });
+      });
+    }
   });
 }
 
