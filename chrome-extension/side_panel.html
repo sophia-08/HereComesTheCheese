@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ergo Side Panel</title>
+    <title>Extension Side Panel</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -14,7 +14,7 @@
             width: 100%;
             padding: 5px;
         }
-        #chatgptResult {
+        #chatgptResult, #domStructure {
             margin-top: 20px;
             border: 1px solid #ccc;
             padding: 10px;
@@ -37,22 +37,15 @@
 
     <button id="sendNativeMessageButton">Send Message to Native Host</button>
 
-    <button id="queryDOMButton">Query DOM Elements</button>
-
     <div>
         <label for="apiKey">ChatGPT API Key:</label>
         <input type="password" id="apiKey">
     </div>
     <button id="saveApiKey">Save API Key</button>
 
-    <div>
-        <label for="chatgptPrompt">ChatGPT Prompt:</label>
-        <input type="text" id="chatgptPrompt">
-    </div>
+    <button id="analyzeDOMButton">Analyze DOM with ChatGPT</button>
 
-    <button id="sendChatGPTButton">Send to ChatGPT</button>
-
-    <div id="queryResult"></div>
+    <div id="domStructure"></div>
     <div id="chatgptResult"></div>
 
     <script src="side_panel.js"></script>

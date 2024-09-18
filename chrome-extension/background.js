@@ -21,15 +21,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "sendNativeMessage":
       sendNativeMessage(message);
       break;
-    case "queryActiveTabDOM":
-      queryActiveTabDOM();
-      break;
-    case "sendChatGPTRequest":
-      sendChatGPTRequest(
-        message.systemPrompt,
-        message.userPrompt,
-        message.apiKey
-      );
+    case "analyzeDOM":
+      analyzeDOMWithChatGPT(message.apiKey);
       break;
   }
 });
@@ -54,43 +47,44 @@ function sendNativeMessage(message) {
   }
 }
 
-function queryActiveTabDOM() {
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+function analyzeDOMWithChatGPT(apiKey) {
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     if (tabs[0].url.startsWith("chrome://")) {
       chrome.runtime.sendMessage({
-        type: "activeDOMQueryResults",
-        results:
-          "Unable to access chrome:// URLs. Please try on a different page.",
+        type: 'chatGPTResponse',
+        response: "Unable to access chrome:// URLs. Please try on a different page."
       });
     } else {
-      chrome.scripting.executeScript(
-        {
-          target: { tabId: tabs[0].id },
-          function: queryDOM,
-        },
-        (results) => {
-          if (chrome.runtime.lastError) {
-            console.error(chrome.runtime.lastError);
-            chrome.runtime.sendMessage({
-              type: "activeDOMQueryResults",
-              results:
-                "An error occurred while querying the DOM: " +
-                chrome.runtime.lastError.message,
-            });
-            return;
-          }
+      chrome.scripting.executeScript({
+        target: { tabId: tabs[0].id },
+        function: queryDOM,
+      }, (results) => {
+        if (chrome.runtime.lastError) {
+          console.error(chrome.runtime.lastError);
           chrome.runtime.sendMessage({
-            type: "activeDOMQueryResults",
-            results: results[0].result,
+            type: 'chatGPTResponse',
+            response: "An error occurred while querying the DOM: " + chrome.runtime.lastError.message
           });
+          return;
         }
-      );
+        console.log("DOM:", results)
+        const domStructure = results[0].result;
+        chrome.runtime.sendMessage({
+          type: 'domStructure',
+          domStructure: domStructure
+        });
+        const systemPrompt =
+        "This is a input and button element from a webpage, is it a login page? If yes, return the element id for the username, password and submit/next button. output is in json format, and include and only include three keys: username, password, submit; \
+       If it is not a login page, return a empty json object.";
+        sendChatGPTRequest(systemPrompt, domStructure, apiKey);
+      });
     }
   });
 }
 
 async function sendChatGPTRequest(systemPrompt, userPrompt, apiKey) {
   try {
+    console.log("sendChatGPTRequest", systemPrompt, userPrompt)
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -115,16 +109,16 @@ async function sendChatGPTRequest(systemPrompt, userPrompt, apiKey) {
     const data = await response.json();
     const chatGPTResponse = data.choices[0].message.content;
 
+      console.log("chatgpt resp: ", chatGPTResponse)
     chrome.runtime.sendMessage({
-      type: "chatGPTResponse",
-      response: chatGPTResponse,
+      type: 'chatGPTResponse',
+      response: chatGPTResponse
     });
   } catch (error) {
     console.error("Error sending request to ChatGPT:", error);
     chrome.runtime.sendMessage({
-      type: "chatGPTResponse",
-      response:
-        "Error: Unable to get response from ChatGPT. Please check your API key and try again.",
+      type: 'chatGPTResponse',
+      response: "Error: Unable to get response from ChatGPT. Please check your API key and try again."
     });
   }
 }
