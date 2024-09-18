@@ -70,7 +70,7 @@ Button 1: id="tpa-google-button", text=" Sign in with Google "';
 
 // Listen for the query results from the background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "queryResults") {
+  if (message.type === "activeDOMQueryResults") {
     const resultDiv = document.getElementById("queryResult");
     if (
       message.results.startsWith("Unable to access") ||

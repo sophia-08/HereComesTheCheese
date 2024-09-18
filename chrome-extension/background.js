@@ -58,7 +58,7 @@ function queryActiveTabDOM() {
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     if (tabs[0].url.startsWith("chrome://")) {
       chrome.runtime.sendMessage({
-        type: "queryResults",
+        type: "activeDOMQueryResults",
         results:
           "Unable to access chrome:// URLs. Please try on a different page.",
       });
@@ -72,7 +72,7 @@ function queryActiveTabDOM() {
           if (chrome.runtime.lastError) {
             console.error(chrome.runtime.lastError);
             chrome.runtime.sendMessage({
-              type: "queryResults",
+              type: "activeDOMQueryResults",
               results:
                 "An error occurred while querying the DOM: " +
                 chrome.runtime.lastError.message,
@@ -80,7 +80,7 @@ function queryActiveTabDOM() {
             return;
           }
           chrome.runtime.sendMessage({
-            type: "queryResults",
+            type: "activeDOMQueryResults",
             results: results[0].result,
           });
         }
