@@ -9,22 +9,28 @@
             font-family: Arial, sans-serif;
             padding: 20px;
         }
-        div {
-            margin-bottom: 10px;
+        input, button {
+            margin: 10px 0;
+            width: 100%;
+            padding: 5px;
         }
-        button {
-            margin-top: 10px;
-            margin-right: 10px;
+        #chatgptResult {
+            margin-top: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            white-space: pre-wrap;
         }
     </style>
 </head>
 <body>
     <div>
-        Username: <input type="text" id="username">
+        <label for="username">Username:</label>
+        <input type="text" id="username">
     </div>
 
     <div>
-        Password: <input type="password" id="password">
+        <label for="password">Password:</label>
+        <input type="password" id="password">
     </div>
 
     <button id="submitButton">Submit</button>
@@ -33,7 +39,21 @@
 
     <button id="queryDOMButton">Query DOM Elements</button>
 
+    <div>
+        <label for="apiKey">ChatGPT API Key:</label>
+        <input type="password" id="apiKey">
+    </div>
+    <button id="saveApiKey">Save API Key</button>
+
+    <div>
+        <label for="chatgptPrompt">ChatGPT Prompt:</label>
+        <input type="text" id="chatgptPrompt">
+    </div>
+
+    <button id="sendChatGPTButton">Send to ChatGPT</button>
+
     <div id="queryResult"></div>
+    <div id="chatgptResult"></div>
 
     <script src="side_panel.js"></script>
 </body>

@@ -24,6 +24,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "queryActiveTabDOM":
       queryActiveTabDOM();
       break;
+    case "sendChatGPTRequest":
+      sendChatGPTRequest(message.prompt, message.apiKey);
+      break;
   }
 });
 
@@ -74,6 +77,41 @@ function queryActiveTabDOM() {
       });
     }
   });
+}
+
+async function sendChatGPTRequest(prompt, apiKey) {
+  try {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const chatGPTResponse = data.choices[0].message.content;
+
+    chrome.runtime.sendMessage({
+      type: 'chatGPTResponse',
+      response: chatGPTResponse
+    });
+  } catch (error) {
+    console.error("Error sending request to ChatGPT:", error);
+    chrome.runtime.sendMessage({
+      type: 'chatGPTResponse',
+      response: "Error: Unable to get response from ChatGPT. Please check your API key and try again."
+    });
+  }
 }
 
 // Helper Functions
