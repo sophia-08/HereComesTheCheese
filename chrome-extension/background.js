@@ -25,7 +25,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       queryActiveTabDOM();
       break;
     case "sendChatGPTRequest":
-      sendChatGPTRequest(message.prompt, message.apiKey);
+      sendChatGPTRequest(
+        message.systemPrompt,
+        message.userPrompt,
+        message.apiKey
+      );
       break;
   }
 });
@@ -51,47 +55,57 @@ function sendNativeMessage(message) {
 }
 
 function queryActiveTabDOM() {
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     if (tabs[0].url.startsWith("chrome://")) {
       chrome.runtime.sendMessage({
-        type: 'queryResults',
-        results: "Unable to access chrome:// URLs. Please try on a different page."
+        type: "queryResults",
+        results:
+          "Unable to access chrome:// URLs. Please try on a different page.",
       });
     } else {
-      chrome.scripting.executeScript({
-        target: { tabId: tabs[0].id },
-        function: queryDOM,
-      }, (results) => {
-        if (chrome.runtime.lastError) {
-          console.error(chrome.runtime.lastError);
+      chrome.scripting.executeScript(
+        {
+          target: { tabId: tabs[0].id },
+          function: queryDOM,
+        },
+        (results) => {
+          if (chrome.runtime.lastError) {
+            console.error(chrome.runtime.lastError);
+            chrome.runtime.sendMessage({
+              type: "queryResults",
+              results:
+                "An error occurred while querying the DOM: " +
+                chrome.runtime.lastError.message,
+            });
+            return;
+          }
           chrome.runtime.sendMessage({
-            type: 'queryResults',
-            results: "An error occurred while querying the DOM: " + chrome.runtime.lastError.message
+            type: "queryResults",
+            results: results[0].result,
           });
-          return;
         }
-        chrome.runtime.sendMessage({
-          type: 'queryResults',
-          results: results[0].result
-        });
-      });
+      );
     }
   });
 }
 
-async function sendChatGPTRequest(prompt, apiKey) {
+async function sendChatGPTRequest(systemPrompt, userPrompt, apiKey) {
   try {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
         model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: prompt }],
-        temperature: 0.7
-      })
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 150,
+      }),
     });
 
     if (!response.ok) {
@@ -102,33 +116,40 @@ async function sendChatGPTRequest(prompt, apiKey) {
     const chatGPTResponse = data.choices[0].message.content;
 
     chrome.runtime.sendMessage({
-      type: 'chatGPTResponse',
-      response: chatGPTResponse
+      type: "chatGPTResponse",
+      response: chatGPTResponse,
     });
   } catch (error) {
     console.error("Error sending request to ChatGPT:", error);
     chrome.runtime.sendMessage({
-      type: 'chatGPTResponse',
-      response: "Error: Unable to get response from ChatGPT. Please check your API key and try again."
+      type: "chatGPTResponse",
+      response:
+        "Error: Unable to get response from ChatGPT. Please check your API key and try again.",
     });
   }
 }
 
 // Helper Functions
 function queryDOM() {
-  const inputs = Array.from(document.querySelectorAll('input')).filter(input => input.type !== 'hidden');
-  const buttons = document.querySelectorAll('button');
-  
-  let resultHTML = '<h3>Input Elements (excluding hidden):</h3><ul>';
+  const inputs = Array.from(document.querySelectorAll("input")).filter(
+    (input) => input.type !== "hidden"
+  );
+  const buttons = document.querySelectorAll("button");
+
+  let resultHTML = "<h3>Input Elements (excluding hidden):</h3><ul>";
   inputs.forEach((input, index) => {
-    resultHTML += `<li>Input ${index + 1}: type="${input.type}", id="${input.id}", name="${input.name}"</li>`;
+    resultHTML += `<li>Input ${index + 1}: type="${input.type}", id="${
+      input.id
+    }", name="${input.name}"</li>`;
   });
-  resultHTML += '</ul><h3>Button Elements:</h3><ul>';
+  resultHTML += "</ul><h3>Button Elements:</h3><ul>";
   buttons.forEach((button, index) => {
-    resultHTML += `<li>Button ${index + 1}: id="${button.id}", text="${button.textContent}"</li>`;
+    resultHTML += `<li>Button ${index + 1}: id="${button.id}", text="${
+      button.textContent
+    }"</li>`;
   });
-  resultHTML += '</ul>';
-  
+  resultHTML += "</ul>";
+
   return resultHTML;
 }
 
