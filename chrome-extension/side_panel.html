@@ -1,36 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Extension Side Panel</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
-        }
-        input, button {
-            margin: 10px 0;
-            width: 100%;
-            padding: 5px;
-        }
-        #chatgptResult, #domStructure {
-            margin-top: 20px;
-            border: 1px solid #ccc;
-            padding: 10px;
-            white-space: pre-wrap;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        padding: 20px;
+      }
+      input,
+      button {
+        margin: 10px 0;
+        width: 100%;
+        padding: 5px;
+      }
+      #chatgptResult,
+      #domStructure {
+        margin-top: 20px;
+        border: 1px solid #ccc;
+        padding: 10px;
+        white-space: pre-wrap;
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div>
-        <label for="username">Username:</label>
-        <input type="text" id="username">
+      <label for="username">Username:</label>
+      <input type="text" id="username" />
     </div>
 
     <div>
-        <label for="password">Password:</label>
-        <input type="password" id="password">
+      <label for="password">Password:</label>
+      <input type="password" id="password" />
     </div>
 
     <button id="submitButton">Submit</button>
@@ -38,8 +40,8 @@
     <button id="sendNativeMessageButton">Send Message to Native Host</button>
 
     <div>
-        <label for="apiKey">ChatGPT API Key:</label>
-        <input type="password" id="apiKey">
+      <label for="apiKey">ChatGPT API Key:</label>
+      <input type="password" id="apiKey" />
     </div>
     <button id="saveApiKey">Save API Key</button>
 
@@ -49,5 +51,5 @@
     <div id="chatgptResult"></div>
 
     <script src="side_panel.js"></script>
-</body>
+  </body>
 </html>

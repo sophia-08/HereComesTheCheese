@@ -1,53 +1,59 @@
 // side_panel.js
-document.getElementById('submitButton').addEventListener('click', () => {
-  const username = document.getElementById('username').value;
-  const password = document.getElementById('password').value;
+document.getElementById("submitButton").addEventListener("click", () => {
+  const username = document.getElementById("username").value;
+  const password = document.getElementById("password").value;
 
   // Perform actions with the username and password values
-  console.log('Username:', username);
-  console.log('Password:', password);
+  console.log("Username:", username);
+  console.log("Password:", password);
 
   chrome.runtime.sendMessage({
-      type: 'loginCredentials',
-      username: username,
-      password: password
+    type: "loginCredentials",
+    username: username,
+    password: password,
   });
 });
 
 let i = 0;
-document.getElementById('sendNativeMessageButton').addEventListener('click', () => {
-  chrome.runtime.sendMessage({
-      type: 'sendNativeMessage',
-      payload: 'hello ' + i
+document
+  .getElementById("sendNativeMessageButton")
+  .addEventListener("click", () => {
+    chrome.runtime.sendMessage({
+      type: "sendNativeMessage",
+      payload: "hello " + i,
+    });
+    i = i + 1;
   });
-  i = i + 1;
+
+document.getElementById("saveApiKey").addEventListener("click", () => {
+  const apiKey = document.getElementById("apiKey").value;
+  chrome.storage.local.set({ chatgptApiKey: apiKey }, () => {
+    console.log("API Key saved");
+    document.getElementById("apiKey").value = "";
+  });
 });
 
-document.getElementById('saveApiKey').addEventListener('click', () => {
-  const apiKey = document.getElementById('apiKey').value;
-  chrome.storage.local.set({ 'chatgptApiKey': apiKey }, () => {
-    console.log('API Key saved');
-    document.getElementById('apiKey').value = '';
-  });
-});
-
-document.getElementById('analyzeDOMButton').addEventListener('click', () => {
-  chrome.storage.local.get(['chatgptApiKey'], (result) => {
+document.getElementById("analyzeDOMButton").addEventListener("click", () => {
+  chrome.storage.local.get(["chatgptApiKey"], (result) => {
     if (result.chatgptApiKey) {
-      chrome.runtime.sendMessage({ type: 'analyzeDOM', apiKey: result.chatgptApiKey });
+      chrome.runtime.sendMessage({
+        type: "analyzeDOM",
+        apiKey: result.chatgptApiKey,
+      });
     } else {
-      document.getElementById('chatgptResult').textContent = 'Please set your API key first.';
+      document.getElementById("chatgptResult").textContent =
+        "Please set your API key first.";
     }
   });
 });
 
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === 'domStructure') {
-    const domStructureDiv = document.getElementById('domStructure');
+  if (message.type === "domStructure") {
+    const domStructureDiv = document.getElementById("domStructure");
     domStructureDiv.textContent = message.domStructure;
-  } else if (message.type === 'chatGPTResponse') {
-    const resultDiv = document.getElementById('chatgptResult');
+  } else if (message.type === "chatGPTResponse") {
+    const resultDiv = document.getElementById("chatgptResult");
     resultDiv.textContent = message.response;
   }
 });
