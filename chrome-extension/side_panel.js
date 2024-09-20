@@ -47,11 +47,35 @@ document.getElementById("analyzeDOMButton").addEventListener("click", () => {
   });
 });
 
+// New function to handle form filling and submission
+document.getElementById("fillAndSubmitButton").addEventListener("click", () => {
+  const chatgptResultElement = document.getElementById("chatgptResult");
+  const chatgptResult = chatgptResultElement.textContent;
+  
+  try {
+    const formData = JSON.parse(chatgptResult);
+    console.log("formData", formData)
+    if (formData.username && formData.submit) {
+      chrome.runtime.sendMessage({
+        type: "fillAndSubmitForm",
+        formData: formData
+      });
+      console.log("Form fill and submit request sent");
+    } else {
+      console.log("Invalid form data or not a login page");
+      chatgptResultElement.textContent = "Invalid form data or not a login page";
+    }
+  } catch (error) {
+    console.error("Error parsing ChatGPT result:", error);
+    chatgptResultElement.textContent = "Error parsing ChatGPT result: " + error.message;
+  }
+});
+
 // Listen for messages from the background script
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "domStructure") {
     const domStructureDiv = document.getElementById("domStructure");
-    domStructureDiv.textContent = message.domStructure;
+    domStructureDiv.innerHTML = message.domStructure;
   } else if (message.type === "chatGPTResponse") {
     const resultDiv = document.getElementById("chatgptResult");
     resultDiv.textContent = message.response;
@@ -59,7 +83,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 document.getElementById("sendChatGPTButton").addEventListener("click", () => {
-  // const prompt = document.getElementById('chatgptPrompt').value;
   const systemPrompt =
     "This is a input and button element from a webpage, is it a login page? If yes, return the element id for the username, password and submit/next button. output is in json format, and include and only include three keys: username, password, submit; \
    If it is not a login page, return a empty json object.";

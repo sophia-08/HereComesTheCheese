@@ -24,6 +24,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "analyzeDOM":
       analyzeDOMWithChatGPT(message.apiKey);
       break;
+    case "fillAndSubmitForm":
+      fillAndSubmitForm(message.formData);
+      break;
   }
 });
 
@@ -79,13 +82,53 @@ function analyzeDOMWithChatGPT(apiKey) {
             domStructure: domStructure,
           });
           const systemPrompt =
-            "This is a input and button element from a webpage, is it a login page? If yes, return the element id for the username, password and submit/next button. output is in json format, and include and only include three keys: username, password, submit; \
-       If it is not a login page, return a empty json object.";
+            "This is a input and button element from a webpage, is it a login page? \
+            If yes, return the element id for the username, password and submit/next button. \
+            output is in json format, and include and only include three keys: username, password, submit; \
+            If it is not a login page, return a empty json object.";
           sendChatGPTRequest(systemPrompt, domStructure, apiKey);
         }
       );
     }
   });
+}
+
+function fillAndSubmitForm(formData) {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabs[0].id },
+      function: fillForm,
+      args: [formData]
+    }, () => {
+      if (chrome.runtime.lastError) {
+        console.error(chrome.runtime.lastError);
+        return;
+      }
+      console.log("Form filled and submitted");
+    });
+  });
+}
+
+function fillForm(formData) {
+  if (formData.username) {
+    const usernameField = document.getElementById(formData.username);
+    if (usernameField) {
+      usernameField.value = "testsii.woods";
+      console.log("Username field filled with 'test'");
+    } else {
+      console.log("Username field not found");
+    }
+  }
+  
+  if (formData.submit) {
+    const submitButton = document.getElementById(formData.submit);
+    if (submitButton) {
+      submitButton.click();
+      console.log("Submit button clicked");
+    } else {
+      console.log("Submit button not found");
+    }
+  }
 }
 
 async function sendChatGPTRequest(systemPrompt, userPrompt, apiKey) {
