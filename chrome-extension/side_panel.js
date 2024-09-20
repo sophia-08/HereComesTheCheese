@@ -50,9 +50,16 @@ document.getElementById("analyzeDOMButton").addEventListener("click", () => {
 // New function to handle form filling and submission
 document.getElementById("fillAndSubmitButton").addEventListener("click", () => {
   const chatgptResultElement = document.getElementById("chatgptResult");
-  const chatgptResult = chatgptResultElement.textContent;
-  
+  console.log("fillAndSubmitButton", chatgptResultElement)
+  let chatgptResult = chatgptResultElement.textContent.trim();
+  console.log("fillAndSubmitButton", chatgptResult)
   try {
+    if (chatgptResult.startsWith("```json")) {
+      chatgptResult = chatgptResult.substring(7, chatgptResult.length - 3).trim();
+    } else if (chatgptResult.startsWith("```") && chatgptResult.endsWith("```")) {
+      chatgptResult = chatgptResult.substring(3, chatgptResult.length - 3).trim();
+    }
+    console.log("fillAndSubmitButton1", chatgptResult)
     const formData = JSON.parse(chatgptResult);
     console.log("formData", formData)
     if (formData.username && formData.submit) {
@@ -63,11 +70,11 @@ document.getElementById("fillAndSubmitButton").addEventListener("click", () => {
       console.log("Form fill and submit request sent");
     } else {
       console.log("Invalid form data or not a login page");
-      chatgptResultElement.textContent = "Invalid form data or not a login page";
+      // chatgptResultElement.textContent = "Invalid form data or not a login page";
     }
   } catch (error) {
     console.error("Error parsing ChatGPT result:", error);
-    chatgptResultElement.textContent = "Error parsing ChatGPT result: " + error.message;
+    // chatgptResultElement.textContent = "Error parsing ChatGPT result: " + error.message;
   }
 });
 
@@ -82,32 +89,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 });
 
-document.getElementById("sendChatGPTButton").addEventListener("click", () => {
-  const systemPrompt =
-    "This is a input and button element from a webpage, is it a login page? If yes, return the element id for the username, password and submit/next button. output is in json format, and include and only include three keys: username, password, submit; \
-   If it is not a login page, return a empty json object.";
-  const userPrompt =
-    '\
-Input Elements (excluding hidden):\
-Input 1: type="text", id="login-username", name="username"\
-Input 2: type="password", id="", name="passwd"\
-Input 3: type="submit", id="login-signin", name="signin"\
-Input 4: type="checkbox", id="persistent", name="persistent"\
-Input 5: type="checkbox", id="mbr-legacy-device-bar-cross", name=""\
-Button Elements:\
-Button 1: id="tpa-google-button", text=" Sign in with Google "';
+// document.getElementById("sendChatGPTButton").addEventListener("click", () => {
+//   const systemPrompt =
+//     "This is a input and button element from a webpage, is it a login page? If yes, return the element id for the username, password and submit/next button. output is in json format, and include and only include three keys: username, password, submit; \
+//    If it is not a login page, return a empty json object.";
+//   const userPrompt =
+//     '\
+// Input Elements (excluding hidden):\
+// Input 1: type="text", id="login-username", name="username"\
+// Input 2: type="password", id="", name="passwd"\
+// Input 3: type="submit", id="login-signin", name="signin"\
+// Input 4: type="checkbox", id="persistent", name="persistent"\
+// Input 5: type="checkbox", id="mbr-legacy-device-bar-cross", name=""\
+// Button Elements:\
+// Button 1: id="tpa-google-button", text=" Sign in with Google "';
 
-  chrome.storage.local.get(["chatgptApiKey"], (result) => {
-    if (result.chatgptApiKey) {
-      chrome.runtime.sendMessage({
-        type: "sendChatGPTRequest",
-        systemPrompt: systemPrompt,
-        userPrompt: userPrompt,
-        apiKey: result.chatgptApiKey,
-      });
-    } else {
-      document.getElementById("chatgptResult").textContent =
-        "Please set your API key first.";
-    }
-  });
-});
+//   chrome.storage.local.get(["chatgptApiKey"], (result) => {
+//     if (result.chatgptApiKey) {
+//       chrome.runtime.sendMessage({
+//         type: "sendChatGPTRequest",
+//         systemPrompt: systemPrompt,
+//         userPrompt: userPrompt,
+//         apiKey: result.chatgptApiKey,
+//       });
+//     } else {
+//       document.getElementById("chatgptResult").textContent =
+//         "Please set your API key first.";
+//     }
+//   });
+// });

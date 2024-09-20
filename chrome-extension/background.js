@@ -84,7 +84,7 @@ function analyzeDOMWithChatGPT(apiKey) {
           const systemPrompt =
             "This is a input and button element from a webpage, is it a login page? \
             If yes, return the element id for the username, password and submit/next button. \
-            output is in json format, and include and only include three keys: username, password, submit; \
+            output must be json object, has and only has three keys: username, password, submit; \
             If it is not a login page, return a empty json object.";
           sendChatGPTRequest(systemPrompt, domStructure, apiKey);
         }
@@ -94,6 +94,7 @@ function analyzeDOMWithChatGPT(apiKey) {
 }
 
 function fillAndSubmitForm(formData) {
+  console.log("fillAndSubmitForm", formData)
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     chrome.scripting.executeScript({
       target: { tabId: tabs[0].id },
@@ -110,6 +111,8 @@ function fillAndSubmitForm(formData) {
 }
 
 function fillForm(formData) {
+  // const formData = JSON.parse(formData_str);
+  // console.log("formData", formData)
   if (formData.username) {
     const usernameField = document.getElementById(formData.username);
     if (usernameField) {
