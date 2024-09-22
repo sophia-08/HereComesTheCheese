@@ -94,19 +94,22 @@ function analyzeDOMWithChatGPT(apiKey) {
 }
 
 function fillAndSubmitForm(formData) {
-  console.log("fillAndSubmitForm", formData)
+  console.log("fillAndSubmitForm", formData);
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    chrome.scripting.executeScript({
-      target: { tabId: tabs[0].id },
-      function: fillForm,
-      args: [formData]
-    }, () => {
-      if (chrome.runtime.lastError) {
-        console.error(chrome.runtime.lastError);
-        return;
+    chrome.scripting.executeScript(
+      {
+        target: { tabId: tabs[0].id },
+        function: fillForm,
+        args: [formData],
+      },
+      () => {
+        if (chrome.runtime.lastError) {
+          console.error(chrome.runtime.lastError);
+          return;
+        }
+        console.log("Form filled and submitted");
       }
-      console.log("Form filled and submitted");
-    });
+    );
   });
 }
 
@@ -122,7 +125,7 @@ function fillForm(formData) {
       console.log("Username field not found");
     }
   }
-  
+
   if (formData.submit) {
     const submitButton = document.getElementById(formData.submit);
     if (submitButton) {
@@ -161,7 +164,33 @@ async function sendChatGPTRequest(systemPrompt, userPrompt, apiKey) {
     const data = await response.json();
     const chatGPTResponse = data.choices[0].message.content;
 
+    //
+
     console.log("chatgpt resp: ", chatGPTResponse);
+
+    let chatgptResult = chatGPTResponse;
+    try {
+      if (chatgptResult.startsWith("```json")) {
+        chatgptResult = chatgptResult.substring(7, chatgptResult.length - 3).trim();
+      } else if (chatgptResult.startsWith("```") && chatgptResult.endsWith("```")) {
+        chatgptResult = chatgptResult.substring(3, chatgptResult.length - 3).trim();
+      }
+      console.log("sendChatGPTRequest fill form with", chatgptResult)
+      const formData = JSON.parse(chatgptResult);
+      console.log("formData", formData)
+      if (formData.username && formData.submit) {
+        fillAndSubmitForm (formData)
+        console.log("Form fill and submit request sent");
+      } else {
+        console.log("Invalid form data or not a login page");
+        // chatgptResultElement.textContent = "Invalid form data or not a login page";
+      }
+    } catch (error) {
+      console.error("Error parsing ChatGPT result:", error);
+      // chatgptResultElement.textContent = "Error parsing ChatGPT result: " + error.message;
+    }    
+    // 
+
     chrome.runtime.sendMessage({
       type: "chatGPTResponse",
       response: chatGPTResponse,
