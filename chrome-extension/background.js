@@ -36,8 +36,15 @@ function handleLoginCredentials(message) {
   console.log("Received credentials from side panel:");
   console.log("Username:", username);
   console.log("Password:", password);
-  // You can perform additional actions with the credentials here
-  // For example, send them to a server or authenticate the user
+
+  const credentialsObject = {
+    type: "loginCredentials",
+    username: username,
+    password: password
+  };
+
+  // Send the credentials via native message
+  sendNativeMessage({ payload: credentialsObject });  
 }
 
 function sendNativeMessage(message) {
