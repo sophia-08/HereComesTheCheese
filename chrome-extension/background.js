@@ -326,17 +326,28 @@ function connectNativeHost() {
     setTimeout(connectNativeHost, 1000); // Attempt to reconnect after 1 second
   });
 }
-
 function handleRetrievedCredentials(username, password) {
-
-  console.log("handleRetrievedCredentials")
-  // chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-  //   chrome.tabs.sendMessage(tabs[0].id, {
-  //     type: "fillLoginForm",
-  //     username: username,
-  //     password: password
-  //   });
-  // });
+  // Check if username and password are valid (non-empty strings)
+  if (typeof username === 'string' && username.trim() !== '' &&
+      typeof password === 'string' && password.trim() !== '') {
+    // Credentials are valid, proceed with filling the login form
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        type: "fillLoginForm",
+        username: username,
+        password: password
+      });
+    });
+  } else {
+    // Log an error if credentials are invalid
+    console.error("Retrieved credentials are invalid. Username or password is empty or not a string.");
+    
+    // Optionally, you can send a message to the user interface to inform the user
+    // chrome.runtime.sendMessage({
+    //   type: "credentialError",
+    //   message: "Unable to retrieve valid credentials. Please check your saved information."
+    // });
+  }
 }
 
 
