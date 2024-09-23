@@ -328,16 +328,17 @@ function connectNativeHost() {
 }
 function handleRetrievedCredentials(username, password) {
   // Check if username and password are valid (non-empty strings)
+  console.log("handleRetrievedCredentials", username, password)
   if (typeof username === 'string' && username.trim() !== '' &&
       typeof password === 'string' && password.trim() !== '') {
     // Credentials are valid, proceed with filling the login form
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-      chrome.tabs.sendMessage(tabs[0].id, {
-        type: "fillLoginForm",
-        username: username,
-        password: password
-      });
-    });
+    // chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    //   chrome.tabs.sendMessage(tabs[0].id, {
+    //     type: "fillLoginForm",
+    //     username: username,
+    //     password: password
+    //   });
+    // });
   } else {
     // Log an error if credentials are invalid
     console.error("Retrieved credentials are invalid. Username or password is empty or not a string.");
