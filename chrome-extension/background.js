@@ -13,7 +13,6 @@ chrome.action.onClicked.addListener((tab) => {
   });
 });
 
-
 // Helper function to extract domain from URL
 function extractDomain(url) {
   let domain;
@@ -28,7 +27,7 @@ function extractDomain(url) {
 
 // Helper Functions for Credential Management
 function saveCredentialsNative(username, password) {
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     const currentUrl = tabs[0].url;
     const domain = extractDomain(currentUrl);
 
@@ -36,27 +35,24 @@ function saveCredentialsNative(username, password) {
       type: "saveCredentials",
       username: username,
       password: password,
-      domain: domain
+      domain: domain,
     };
     sendNativeMessage({ payload: credentialsObject });
   });
 }
 
-
 function retrieveCredentialsNative() {
-  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     const currentUrl = tabs[0].url;
     const domain = extractDomain(currentUrl);
 
     const retrieveRequest = {
       type: "retrieveCredentials",
-      domain: domain
+      domain: domain,
     };
     sendNativeMessage({ payload: retrieveRequest });
   });
 }
-
-
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
@@ -68,7 +64,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break;
     case "retrieveCredentials":
       retrieveCredentialsNative();
-      break;      
+      break;
     case "analyzeDOM":
       analyzeDOMWithChatGPT(message.apiKey);
       break;
@@ -317,7 +313,6 @@ function connectNativeHost() {
       // Handle the retrieved credentials
       handleRetrievedCredentials(response.username, response.password);
     }
-
   });
 
   port.onDisconnect.addListener(() => {
@@ -328,9 +323,13 @@ function connectNativeHost() {
 }
 function handleRetrievedCredentials(username, password) {
   // Check if username and password are valid (non-empty strings)
-  console.log("handleRetrievedCredentials", username, password)
-  if (typeof username === 'string' && username.trim() !== '' &&
-      typeof password === 'string' && password.trim() !== '') {
+  console.log("handleRetrievedCredentials", username, password);
+  if (
+    typeof username === "string" &&
+    username.trim() !== "" &&
+    typeof password === "string" &&
+    password.trim() !== ""
+  ) {
     // Credentials are valid, proceed with filling the login form
     // chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
     //   chrome.tabs.sendMessage(tabs[0].id, {
@@ -341,8 +340,10 @@ function handleRetrievedCredentials(username, password) {
     // });
   } else {
     // Log an error if credentials are invalid
-    console.error("Retrieved credentials are invalid. Username or password is empty or not a string.");
-    
+    console.error(
+      "Retrieved credentials are invalid. Username or password is empty or not a string."
+    );
+
     // Optionally, you can send a message to the user interface to inform the user
     // chrome.runtime.sendMessage({
     //   type: "credentialError",
@@ -350,7 +351,6 @@ function handleRetrievedCredentials(username, password) {
     // });
   }
 }
-
 
 // Initialize native messaging connection
 connectNativeHost();

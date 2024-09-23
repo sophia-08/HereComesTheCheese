@@ -50,22 +50,29 @@ document.getElementById("analyzeDOMButton").addEventListener("click", () => {
 // New function to handle form filling and submission
 document.getElementById("fillAndSubmitButton").addEventListener("click", () => {
   const chatgptResultElement = document.getElementById("chatgptResult");
-  console.log("fillAndSubmitButton", chatgptResultElement)
+  console.log("fillAndSubmitButton", chatgptResultElement);
   let chatgptResult = chatgptResultElement.textContent.trim();
-  console.log("fillAndSubmitButton", chatgptResult)
+  console.log("fillAndSubmitButton", chatgptResult);
   try {
     if (chatgptResult.startsWith("```json")) {
-      chatgptResult = chatgptResult.substring(7, chatgptResult.length - 3).trim();
-    } else if (chatgptResult.startsWith("```") && chatgptResult.endsWith("```")) {
-      chatgptResult = chatgptResult.substring(3, chatgptResult.length - 3).trim();
+      chatgptResult = chatgptResult
+        .substring(7, chatgptResult.length - 3)
+        .trim();
+    } else if (
+      chatgptResult.startsWith("```") &&
+      chatgptResult.endsWith("```")
+    ) {
+      chatgptResult = chatgptResult
+        .substring(3, chatgptResult.length - 3)
+        .trim();
     }
-    console.log("fillAndSubmitButton1", chatgptResult)
+    console.log("fillAndSubmitButton1", chatgptResult);
     const formData = JSON.parse(chatgptResult);
-    console.log("formData", formData)
+    console.log("formData", formData);
     if (formData.username && formData.submit) {
       chrome.runtime.sendMessage({
         type: "fillAndSubmitForm",
-        formData: formData
+        formData: formData,
       });
       console.log("Form fill and submit request sent");
     } else {
