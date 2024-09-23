@@ -13,22 +13,49 @@ chrome.action.onClicked.addListener((tab) => {
   });
 });
 
-// Helper Functions for Credential Management
-function saveCredentialsNative(username, password) {
-  const credentialsObject = {
-    type: "saveCredentials",
-    username: username,
-    password: password
-  };
-  sendNativeMessage({ payload: credentialsObject });
+
+// Helper function to extract domain from URL
+function extractDomain(url) {
+  let domain;
+  try {
+    domain = new URL(url).hostname;
+  } catch (error) {
+    console.error("Invalid URL:", url);
+    domain = "";
+  }
+  return domain;
 }
 
-function retrieveCredentialsNative() {
-  const retrieveRequest = {
-    type: "retrieveCredentials"
-  };
-  sendNativeMessage({ payload: retrieveRequest });
+// Helper Functions for Credential Management
+function saveCredentialsNative(username, password) {
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    const currentUrl = tabs[0].url;
+    const domain = extractDomain(currentUrl);
+
+    const credentialsObject = {
+      type: "saveCredentials",
+      username: username,
+      password: password,
+      domain: domain
+    };
+    sendNativeMessage({ payload: credentialsObject });
+  });
 }
+
+
+function retrieveCredentialsNative() {
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    const currentUrl = tabs[0].url;
+    const domain = extractDomain(currentUrl);
+
+    const retrieveRequest = {
+      type: "retrieveCredentials",
+      domain: domain
+    };
+    sendNativeMessage({ payload: retrieveRequest });
+  });
+}
+
 
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -57,12 +84,6 @@ function handleLoginCredentials(message) {
   console.log("Received credentials from side panel:");
   console.log("Username:", username);
   console.log("Password:", password);
-
-  const credentialsObject = {
-    type: "loginCredentials",
-    username: username,
-    password: password
-  };
 
   // Save credentials using the helper function
   saveCredentialsNative(username, password);
