@@ -13,6 +13,24 @@ chrome.action.onClicked.addListener((tab) => {
   });
 });
 
+// Helper Functions for Credential Management
+function saveCredentialsNative(username, password) {
+  const credentialsObject = {
+    type: "saveCredentials",
+    username: username,
+    password: password
+  };
+  sendNativeMessage({ payload: credentialsObject });
+}
+
+function retrieveCredentialsNative() {
+  const retrieveRequest = {
+    type: "retrieveCredentials"
+  };
+  sendNativeMessage({ payload: retrieveRequest });
+}
+
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   switch (message.type) {
     case "loginCredentials":
@@ -21,6 +39,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "sendNativeMessage":
       sendNativeMessage(message);
       break;
+    case "retrieveCredentials":
+      retrieveCredentialsNative();
+      break;      
     case "analyzeDOM":
       analyzeDOMWithChatGPT(message.apiKey);
       break;
@@ -43,8 +64,8 @@ function handleLoginCredentials(message) {
     password: password
   };
 
-  // Send the credentials via native message
-  sendNativeMessage({ payload: credentialsObject });  
+  // Save credentials using the helper function
+  saveCredentialsNative(username, password);
 }
 
 function sendNativeMessage(message) {
@@ -270,6 +291,12 @@ function connectNativeHost() {
 
   port.onMessage.addListener((response) => {
     console.log("Received response from native host:", response);
+
+    if (response.type === "credentialsRetrieved") {
+      // Handle the retrieved credentials
+      handleRetrievedCredentials(response.username, response.password);
+    }
+
   });
 
   port.onDisconnect.addListener(() => {
@@ -278,6 +305,19 @@ function connectNativeHost() {
     setTimeout(connectNativeHost, 1000); // Attempt to reconnect after 1 second
   });
 }
+
+function handleRetrievedCredentials(username, password) {
+
+  console.log("handleRetrievedCredentials")
+  // chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  //   chrome.tabs.sendMessage(tabs[0].id, {
+  //     type: "fillLoginForm",
+  //     username: username,
+  //     password: password
+  //   });
+  // });
+}
+
 
 // Initialize native messaging connection
 connectNativeHost();
