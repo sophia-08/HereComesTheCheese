@@ -171,15 +171,22 @@ async function sendChatGPTRequest(systemPrompt, userPrompt, apiKey) {
     let chatgptResult = chatGPTResponse;
     try {
       if (chatgptResult.startsWith("```json")) {
-        chatgptResult = chatgptResult.substring(7, chatgptResult.length - 3).trim();
-      } else if (chatgptResult.startsWith("```") && chatgptResult.endsWith("```")) {
-        chatgptResult = chatgptResult.substring(3, chatgptResult.length - 3).trim();
+        chatgptResult = chatgptResult
+          .substring(7, chatgptResult.length - 3)
+          .trim();
+      } else if (
+        chatgptResult.startsWith("```") &&
+        chatgptResult.endsWith("```")
+      ) {
+        chatgptResult = chatgptResult
+          .substring(3, chatgptResult.length - 3)
+          .trim();
       }
-      console.log("sendChatGPTRequest fill form with", chatgptResult)
+      console.log("sendChatGPTRequest fill form with", chatgptResult);
       const formData = JSON.parse(chatgptResult);
-      console.log("formData", formData)
+      console.log("formData", formData);
       if (formData.username && formData.submit) {
-        fillAndSubmitForm (formData)
+        fillAndSubmitForm(formData);
         console.log("Form fill and submit request sent");
       } else {
         console.log("Invalid form data or not a login page");
@@ -188,8 +195,8 @@ async function sendChatGPTRequest(systemPrompt, userPrompt, apiKey) {
     } catch (error) {
       console.error("Error parsing ChatGPT result:", error);
       // chatgptResultElement.textContent = "Error parsing ChatGPT result: " + error.message;
-    }    
-    // 
+    }
+    //
 
     chrome.runtime.sendMessage({
       type: "chatGPTResponse",
