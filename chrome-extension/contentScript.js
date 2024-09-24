@@ -43,8 +43,8 @@
 // document.body.appendChild(divider);
 
 // Variables to track mouse state
-let isDragging = false;
-let currentX;
+// let isDragging = false;
+// let currentX;
 
 // // Event listener for the DOM button
 // domButton.addEventListener('click', () => {
@@ -100,3 +100,14 @@ let currentX;
 //     document.body.style.width = `${(newLeft / window.innerWidth) * 100}%`;
 //   }
 // }
+
+function extractTextContent() {
+  return document.body.innerText;
+}
+
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  console.log("contentScript ", request);
+  if (request.action === "getDOMContent") {
+    sendResponse({ content: extractTextContent() });
+  }
+});

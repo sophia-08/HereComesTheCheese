@@ -27,6 +27,7 @@ document
 
 document.getElementById("saveApiKey").addEventListener("click", () => {
   const apiKey = document.getElementById("apiKey").value;
+  if (apiKey.length == 0) return;
   chrome.storage.local.set({ chatgptApiKey: apiKey }, () => {
     console.log("API Key saved");
     document.getElementById("apiKey").value = "";
@@ -125,3 +126,31 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 //     }
 //   });
 // });
+
+document.getElementById("summarize").addEventListener("click", async () => {
+  try {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+
+    if (!tab) {
+      throw new Error("No active tab found");
+    }
+
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      action: "getDOMContent",
+    });
+    console.log("getDOMContent response=", response);
+    if (response && response.content) {
+      // const summary = await sendToChatGPT(response.content);
+      // document.getElementById('summary').textContent = summary;
+      document.getElementById("summary").textContent = response.content;
+    } else {
+      throw new Error("Failed to get DOM content");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+    document.getElementById("summary").textContent = "Error: " + error.message;
+  }
+});
