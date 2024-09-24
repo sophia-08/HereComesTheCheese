@@ -138,13 +138,17 @@ document.getElementById("summarize").addEventListener("click", async () => {
       throw new Error("No active tab found");
     }
 
+    // Inject the content script into the active tab
+    await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      files: ['contentScript.js']  
+    });    
+
     const response = await chrome.tabs.sendMessage(tab.id, {
       action: "getDOMContent",
     });
     console.log("getDOMContent response=", response);
     if (response && response.content) {
-      // const summary = await sendToChatGPT(response.content);
-      // document.getElementById('summary').textContent = summary;
       document.getElementById("summary").textContent = response.content;
     } else {
       throw new Error("Failed to get DOM content");
