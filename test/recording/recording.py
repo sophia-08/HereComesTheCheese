@@ -30,38 +30,43 @@ def main(args):
     ser = serial.Serial(args.port, args.baud_rate, timeout=1)
     logging.info('Awaiting response from device')
 
-    while True:
-        ser.write(b"init\n")
-        recv = ser.readline().rstrip()
-        print(recv)
-        if recv == b'init_ok':
-            logging.info('Device init successful')            
-            break
-        if recv == b'init_fail':
-            logging.error('Device init failed')
-            sys.exit(0)
+    # while True:
+    #     ser.write(b"init\n")
+    #     recv = ser.readline().rstrip()
+    #     print(recv)
+    #     if recv == b'init_ok':
+    #         logging.info('Device init successful')            
+    #         break
+    #     if recv == b'init_fail':
+    #         logging.error('Device init failed')
+    #         sys.exit(0)
 
     while True: 
         try:
             logging.info('READY') 
 
-            input("Press Enter to continue...")
-            ser.write(b"rec\n")
-            logging.info('RECORDING')  
+            # input("Press Enter to continue...")
+            # ser.write(b"rec\n")
+            # logging.info('RECORDING')  
             recv = ""
             raw_sound = []
 
             while True:
                 recv = ser.readline().rstrip()
+                # logging.info(recv)
                 if recv == b"rec_ok":
                     logging.info('RECORDING FINISHED') 
                 if recv == b"fi":
                     logging.info('TRANSFER FINISHED')
                     break 
-                if not recv in commands:
-                    raw_sound.append(int(recv))
-                logging.debug(recv)
-
+                try:
+                    if not recv in commands:
+                        raw_sound.append(int(recv))
+                except:
+                    logging.info(recv)
+                    pass
+                
+            logging.info("write file")
             filename = args.filename + str(i) + ".wav"
             write_wav_data(raw_sound, filename)
             i += 1
@@ -80,13 +85,13 @@ if __name__ == '__main__':
     argparser.add_argument(
         '-p',
         '--port',
-        default='/dev/ttyACM0',
+        default='/dev/cu.usbmodem14101',
         help='port for connection to the device')
 
     argparser.add_argument(
         '-b',
         '--baud_rate',
-        default=57600,
+        default=115200,
         help='Connection baud rate')
 
     argparser.add_argument(
