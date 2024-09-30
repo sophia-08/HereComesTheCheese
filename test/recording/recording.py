@@ -20,8 +20,11 @@ def write_wav_data(raw_sound, filename):
     obj.setframerate(sampleRate)
 
     for value in raw_sound:
-        data = struct.pack('<h', value)
-        obj.writeframesraw(data)
+        try:
+            data = struct.pack('<h', value)
+            obj.writeframesraw(data)
+        except:
+            logging.info("wrong ", value)
     obj.close()
 
 
@@ -68,8 +71,11 @@ def main(args):
                 
             logging.info("write file")
             filename = args.filename + str(i) + ".wav"
+            # try:
             write_wav_data(raw_sound, filename)
-            i += 1
+            # except:
+            #     logging.info(raw_sound)
+            # i += 1
 
         except KeyboardInterrupt:
             logging.info('Exiting script')            
