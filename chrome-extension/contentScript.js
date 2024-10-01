@@ -111,3 +111,37 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ content: extractTextContent() });
   }
 });
+
+
+document.addEventListener('mousemove', (e) => {
+  const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+  if (range) {
+    const word = getWordAtPosition(range.startContainer, range.startOffset);
+    if (word) {
+      chrome.runtime.sendMessage({
+        type: "wordUnderCursor",
+        word: word,
+      });
+    }
+  }
+});
+
+function getWordAtPosition(node, offset) {
+  if (node.nodeType !== Node.TEXT_NODE) return null;
+  
+  const text = node.textContent;
+  let start = offset;
+  let end = offset;
+
+  // Find the start of the word
+  while (start > 0 && /\w/.test(text[start - 1])) {
+    start--;
+  }
+
+  // Find the end of the word
+  while (end < text.length && /\w/.test(text[end])) {
+    end++;
+  }
+
+  return text.slice(start, end);
+}

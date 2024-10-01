@@ -72,6 +72,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "fillAndSubmitForm":
       fillAndSubmitForm(message.formData);
       break;
+    case "wordUnderCursor":
+      console.log("wordUnderCursor:", message.word);
+      break;
   }
 });
 
