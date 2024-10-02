@@ -113,18 +113,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 });
 
 
-document.addEventListener('mousemove', (e) => {
-  const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-  if (range) {
-    const word = getWordAtPosition(range.startContainer, range.startOffset);
-    if (word) {
+// document.addEventListener('mousemove', (e) => {
+//   const range = document.caretRangeFromPoint(e.clientX, e.clientY);
+//   if (range) {
+//     const word = getWordAtPosition(range.startContainer, range.startOffset);
+//     if (word) {
+//       chrome.runtime.sendMessage({
+//         type: "wordUnderCursor",
+//         word: word,
+//       });
+//     }
+//   }
+// });
+
+document.addEventListener('keydown', (e) => {
+  // Check if the pressed key combination is Ctrl+Q
+  if (e.ctrlKey && e.key === 'q') {
+    e.preventDefault(); // Prevent default browser behavior for this key combination
+    const selection = window.getSelection();
+    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : document.caretRangeFromPoint(e.clientX, e.clientY);
+    
+    if (range) {
+      const word = getWordAtPosition(range.startContainer, range.startOffset);
+      if (word) {
+        // lastWord = word;
       chrome.runtime.sendMessage({
         type: "wordUnderCursor",
         word: word,
       });
+      }
     }
   }
 });
+
 
 function getWordAtPosition(node, offset) {
   if (node.nodeType !== Node.TEXT_NODE) return null;
