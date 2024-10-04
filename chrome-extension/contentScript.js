@@ -112,7 +112,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-
 // document.addEventListener('mousemove', (e) => {
 //   const range = document.caretRangeFromPoint(e.clientX, e.clientY);
 //   if (range) {
@@ -125,31 +124,46 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 //     }
 //   }
 // });
+let lastKnownMouseX = 0;
+let lastKnownMouseY = 0;
 
-document.addEventListener('keydown', (e) => {
+// Track the last known mouse position
+document.addEventListener(
+  "mousemove",
+  (e) => {
+    lastKnownMouseX = e.clientX;
+    lastKnownMouseY = e.clientY;
+  },
+  { passive: true }
+);
+
+document.addEventListener("keydown", (e) => {
   // Check if the pressed key combination is Ctrl+Q
-  if (e.ctrlKey && e.key === 'q') {
+  if (e.ctrlKey && e.key === "q") {
     e.preventDefault(); // Prevent default browser behavior for this key combination
-    const selection = window.getSelection();
-    const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : document.caretRangeFromPoint(e.clientX, e.clientY);
-    
+    // const selection = window.getSelection();
+    // const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : document.caretRangeFromPoint(e.clientX, e.clientY);
+
+    const range = document.caretRangeFromPoint(
+      lastKnownMouseX,
+      lastKnownMouseY
+    );
     if (range) {
       const word = getWordAtPosition(range.startContainer, range.startOffset);
       if (word) {
         // lastWord = word;
-      chrome.runtime.sendMessage({
-        type: "wordUnderCursor",
-        word: word,
-      });
+        chrome.runtime.sendMessage({
+          type: "wordUnderCursor",
+          word: word,
+        });
       }
     }
   }
 });
 
-
 function getWordAtPosition(node, offset) {
   if (node.nodeType !== Node.TEXT_NODE) return null;
-  
+
   const text = node.textContent;
   let start = offset;
   let end = offset;
