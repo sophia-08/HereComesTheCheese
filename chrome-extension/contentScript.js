@@ -128,6 +128,7 @@ let lastWord = "";
 let lastKnownMouseX = 0;
 let lastKnownMouseY = 0;
 let highlightedElement = null;
+let popupElement = null;
 
 // Track the last known mouse position
 document.addEventListener(
@@ -135,6 +136,15 @@ document.addEventListener(
   (e) => {
     lastKnownMouseX = e.clientX;
     lastKnownMouseY = e.clientY;
+
+        // Add popup removal logic here
+        if (highlightedElement && popupElement) {
+          const rect = highlightedElement.getBoundingClientRect();
+          if (e.clientX < rect.left || e.clientX > rect.right || 
+              e.clientY < rect.top || e.clientY > rect.bottom) {
+              removePopup();
+          }
+      }
   },
   { passive: true }
 );
@@ -206,6 +216,9 @@ function highlightWord(range) {
   
   range.surroundContents(highlight);
   highlightedElement = highlight;
+
+      // Create and position the popup
+      createPopup(highlight);
 }
 
 function removeHighlight() {
@@ -216,5 +229,35 @@ function removeHighlight() {
       }
       parent.removeChild(highlightedElement);
       highlightedElement = null;
+      removePopup(); // Remove the popup when removing the highlight
+  }
+}
+
+
+function createPopup(highlightElement) {
+  removePopup(); // Remove any existing popup
+
+  popupElement = document.createElement('div');
+  popupElement.style.position = 'absolute';
+  popupElement.style.backgroundColor = 'white';
+  popupElement.style.border = '1px solid black';
+  popupElement.style.padding = '5px';
+  popupElement.style.borderRadius = '3px';
+  popupElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+  popupElement.style.zIndex = '1000';
+  popupElement.textContent = 'Definition will appear here'; // Placeholder text
+
+  // Position the popup under the highlighted word
+  const rect = highlightElement.getBoundingClientRect();
+  popupElement.style.left = `${rect.left + window.scrollX}px`;
+  popupElement.style.top = `${rect.bottom + window.scrollY}px`;
+
+  document.body.appendChild(popupElement);
+}
+
+function removePopup() {
+  if (popupElement) {
+      popupElement.remove();
+      popupElement = null;
   }
 }
