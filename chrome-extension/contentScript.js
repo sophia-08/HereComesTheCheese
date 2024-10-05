@@ -332,12 +332,13 @@ function removePopup() {
 
 // Function to handle API requests
 function fetchDefinition(word) {
-  fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
+  const lowercaseWord = word.toLowerCase();
+  fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${lowercaseWord}`)
     .then((response) => response.json())
     .then((data) => {
       if (Array.isArray(data) && data.length > 0) {
         const entry = data[0];
-        let definitionHTML = `<h2>${entry.word}</h2>`;
+        let definitionHTML = `<h2>${word}</h2>`;
 
         entry.meanings.forEach((meaning, index) => {
           definitionHTML += `<h3>${index + 1}. ${meaning.partOfSpeech}</h3>`;
@@ -382,7 +383,7 @@ function fetchDefinition(word) {
     });
 }
 
-// Add this function to update the popup content
+// Function to update the popup content
 function updatePopupContent(content) {
   if (popupElement) {
     popupElement.innerHTML = content;
