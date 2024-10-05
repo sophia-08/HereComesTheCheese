@@ -223,6 +223,9 @@ function highlightWord(range) {
 
   // Create and position the popup
   createPopup(highlight);
+
+      // Fetch the definition
+      fetchDefinition(lastWord);
 }
 
 function removeHighlight() {
@@ -248,7 +251,8 @@ function createPopup(highlightElement) {
   popupElement.style.borderRadius = "3px";
   popupElement.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
   popupElement.style.zIndex = "1000";
-  popupElement.textContent = "Definition will appear here"; // Placeholder text
+  popupElement.style.maxWidth = '300px'; // Limit the width of the popup
+  popupElement.textContent = 'Loading definition...'; // Show loading message
 
   // Position the popup under the highlighted word
   const rect = highlightElement.getBoundingClientRect();
@@ -262,5 +266,31 @@ function removePopup() {
   if (popupElement) {
     popupElement.remove();
     popupElement = null;
+  }
+}
+
+
+// Add this function to handle API requests
+function fetchDefinition(word) {
+  fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
+      .then(response => response.json())
+      .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+              const definition = data[0].meanings[0].definitions[0].definition;
+              updatePopupContent(definition);
+          } else {
+              updatePopupContent("Definition not found.");
+          }
+      })
+      .catch(error => {
+          console.error('Error fetching definition:', error);
+          updatePopupContent("Error fetching definition.");
+      });
+}
+
+// Add this function to update the popup content
+function updatePopupContent(content) {
+  if (popupElement) {
+      popupElement.textContent = content;
   }
 }
