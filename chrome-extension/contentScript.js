@@ -251,7 +251,7 @@ function createPopup(highlightElement) {
   popupElement.style.borderRadius = "3px";
   popupElement.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
   popupElement.style.zIndex = "1000";
-  popupElement.style.maxWidth = '300px'; // Limit the width of the popup
+  popupElement.style.maxWidth = '500px'; // Limit the width of the popup
   popupElement.textContent = 'Loading definition...'; // Show loading message
 
   // Position the popup under the highlighted word
@@ -273,24 +273,54 @@ function removePopup() {
 // Add this function to handle API requests
 function fetchDefinition(word) {
   fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
-      .then(response => response.json())
-      .then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-              const definition = data[0].meanings[0].definitions[0].definition;
-              updatePopupContent(definition);
-          } else {
-              updatePopupContent("Definition not found.");
+    .then(response => response.json())
+    .then(data => {
+      if (Array.isArray(data) && data.length > 0) {
+        const entry = data[0];
+        let definitionHTML = `<h2>${entry.word}</h2>`;
+
+        entry.meanings.forEach((meaning, index) => {
+          definitionHTML += `<h3>${index + 1}. ${meaning.partOfSpeech}</h3>`;
+          definitionHTML += '<ul>';
+          meaning.definitions.forEach(def => {
+            definitionHTML += `<li><strong>Definition:</strong> ${def.definition}`;
+            if (def.example) {
+              definitionHTML += `<br><em>Example:</em> "${def.example}"`;
+            }
+            definitionHTML += '</li>';
+          });
+          definitionHTML += '</ul>';
+
+          if (meaning.synonyms.length > 0) {
+            definitionHTML += `<p><strong>Synonyms:</strong> ${meaning.synonyms.join(', ')}</p>`;
           }
-      })
-      .catch(error => {
-          console.error('Error fetching definition:', error);
-          updatePopupContent("Error fetching definition.");
-      });
+          if (meaning.antonyms.length > 0) {
+            definitionHTML += `<p><strong>Antonyms:</strong> ${meaning.antonyms.join(', ')}</p>`;
+          }
+        });
+
+        if (entry.phonetics && entry.phonetics.length > 0) {
+          const phonetic = entry.phonetics.find(p => p.text && p.audio);
+          if (phonetic) {
+            definitionHTML += `<p><strong>Pronunciation:</strong> ${phonetic.text} `;
+            definitionHTML += `<audio controls src="${phonetic.audio}">Your browser does not support the audio element.</audio></p>`;
+          }
+        }
+
+        updatePopupContent(definitionHTML);
+      } else {
+        updatePopupContent("Definition not found.");
+      }
+    })
+    .catch(error => {
+      console.error('Error fetching definition:', error);
+      updatePopupContent("Error fetching definition.");
+    });
 }
 
 // Add this function to update the popup content
 function updatePopupContent(content) {
   if (popupElement) {
-      popupElement.textContent = content;
+      popupElement.innerHTML = content;
   }
 }
