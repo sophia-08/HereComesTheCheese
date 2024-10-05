@@ -137,14 +137,18 @@ document.addEventListener(
     lastKnownMouseX = e.clientX;
     lastKnownMouseY = e.clientY;
 
-        // Add popup removal logic here
-        if (highlightedElement && popupElement) {
-          const rect = highlightedElement.getBoundingClientRect();
-          if (e.clientX < rect.left || e.clientX > rect.right || 
-              e.clientY < rect.top || e.clientY > rect.bottom) {
-              removePopup();
-          }
+    // Add popup removal logic here
+    if (highlightedElement && popupElement) {
+      const rect = highlightedElement.getBoundingClientRect();
+      if (
+        e.clientX < rect.left ||
+        e.clientX > rect.right ||
+        e.clientY < rect.top ||
+        e.clientY > rect.bottom
+      ) {
+        removePopup();
       }
+    }
   },
   { passive: true }
 );
@@ -210,42 +214,41 @@ function getWordAtPosition(x, y) {
 
 function highlightWord(range) {
   removeHighlight(); // Ensure any existing highlight is removed
-  const highlight = document.createElement('span');
-  highlight.style.backgroundColor = 'lightyellow';
-  highlight.className = 'extension-highlight'; // Add a class for easier identification
-  
+  const highlight = document.createElement("span");
+  highlight.style.backgroundColor = "lightyellow";
+  highlight.className = "extension-highlight"; // Add a class for easier identification
+
   range.surroundContents(highlight);
   highlightedElement = highlight;
 
-      // Create and position the popup
-      createPopup(highlight);
+  // Create and position the popup
+  createPopup(highlight);
 }
 
 function removeHighlight() {
   if (highlightedElement) {
-      const parent = highlightedElement.parentNode;
-      while (highlightedElement.firstChild) {
-          parent.insertBefore(highlightedElement.firstChild, highlightedElement);
-      }
-      parent.removeChild(highlightedElement);
-      highlightedElement = null;
-      removePopup(); // Remove the popup when removing the highlight
+    const parent = highlightedElement.parentNode;
+    while (highlightedElement.firstChild) {
+      parent.insertBefore(highlightedElement.firstChild, highlightedElement);
+    }
+    parent.removeChild(highlightedElement);
+    highlightedElement = null;
+    removePopup(); // Remove the popup when removing the highlight
   }
 }
-
 
 function createPopup(highlightElement) {
   removePopup(); // Remove any existing popup
 
-  popupElement = document.createElement('div');
-  popupElement.style.position = 'absolute';
-  popupElement.style.backgroundColor = 'white';
-  popupElement.style.border = '1px solid black';
-  popupElement.style.padding = '5px';
-  popupElement.style.borderRadius = '3px';
-  popupElement.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
-  popupElement.style.zIndex = '1000';
-  popupElement.textContent = 'Definition will appear here'; // Placeholder text
+  popupElement = document.createElement("div");
+  popupElement.style.position = "absolute";
+  popupElement.style.backgroundColor = "white";
+  popupElement.style.border = "1px solid black";
+  popupElement.style.padding = "5px";
+  popupElement.style.borderRadius = "3px";
+  popupElement.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+  popupElement.style.zIndex = "1000";
+  popupElement.textContent = "Definition will appear here"; // Placeholder text
 
   // Position the popup under the highlighted word
   const rect = highlightElement.getBoundingClientRect();
@@ -257,7 +260,7 @@ function createPopup(highlightElement) {
 
 function removePopup() {
   if (popupElement) {
-      popupElement.remove();
-      popupElement = null;
+    popupElement.remove();
+    popupElement = null;
   }
 }
