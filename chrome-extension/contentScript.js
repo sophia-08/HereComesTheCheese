@@ -127,7 +127,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 let lastWord = "";
 let lastKnownMouseX = 0;
 let lastKnownMouseY = 0;
-let highlightedRange = null;
+let highlightedElement = null;
 
 // Track the last known mouse position
 document.addEventListener(
@@ -199,27 +199,22 @@ function getWordAtPosition(x, y) {
 }
 
 function highlightWord(range) {
-  const highlight = document.createElement("span");
-  highlight.style.backgroundColor = "lightyellow";
-  highlight.style.display = "inline";
-
+  removeHighlight(); // Ensure any existing highlight is removed
+  const highlight = document.createElement('span');
+  highlight.style.backgroundColor = 'lightyellow';
+  highlight.className = 'extension-highlight'; // Add a class for easier identification
+  
   range.surroundContents(highlight);
-  highlightedRange = range;
+  highlightedElement = highlight;
 }
 
 function removeHighlight() {
-  if (highlightedRange) {
-    const highlight = highlightedRange.startContainer.parentNode;
-    if (
-      highlight.nodeType === Node.ELEMENT_NODE &&
-      highlight.style.backgroundColor === "lightyellow"
-    ) {
-      const parent = highlight.parentNode;
-      while (highlight.firstChild) {
-        parent.insertBefore(highlight.firstChild, highlight);
+  if (highlightedElement) {
+      const parent = highlightedElement.parentNode;
+      while (highlightedElement.firstChild) {
+          parent.insertBefore(highlightedElement.firstChild, highlightedElement);
       }
-      parent.removeChild(highlight);
-    }
-    highlightedRange = null;
+      parent.removeChild(highlightedElement);
+      highlightedElement = null;
   }
 }
