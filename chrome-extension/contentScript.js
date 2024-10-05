@@ -226,8 +226,10 @@ function getWordAtPosition(x, y) {
 function highlightWord(range) {
   removeHighlight(); // Ensure any existing highlight is removed
   const highlight = document.createElement("span");
-  highlight.style.backgroundColor = "lightyellow";
   highlight.className = "extension-highlight"; // Add a class for easier identification
+
+  // Set theme-aware highlight color
+  setThemeAwareHighlight(highlight);
 
   range.surroundContents(highlight);
   highlightedElement = highlight;
@@ -237,6 +239,30 @@ function highlightWord(range) {
 
   // Fetch the definition
   fetchDefinition(lastWord);
+}
+
+function setThemeAwareHighlight(element) {
+  const bodyStyles = window.getComputedStyle(document.body);
+  const isDarkTheme =
+    bodyStyles.backgroundColor
+      .match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i)
+      .slice(1)
+      .map(Number)
+      .reduce((a, b) => a + b) < 382; // Threshold for considering it a dark theme
+
+  if (isDarkTheme) {
+    element.style.backgroundColor = "rgba(80, 80, 0, 0.5)"; // Dark yellow with transparency
+    element.style.color = "#fff"; // White text for dark background
+  } else {
+    element.style.backgroundColor = "rgba(255, 255, 0, 0.3)"; // Light yellow with transparency
+    element.style.color = "inherit"; // Inherit text color from parent
+  }
+
+  // Add a subtle outline for better visibility
+  element.style.outline = isDarkTheme
+    ? "1px solid rgba(255, 255, 0, 0.5)"
+    : "1px solid rgba(0, 0, 0, 0.2)";
+  element.style.borderRadius = "2px";
 }
 
 function removeHighlight() {
