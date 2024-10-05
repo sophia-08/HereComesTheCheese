@@ -143,14 +143,16 @@ document.addEventListener(
       const popupRect = popupElement.getBoundingClientRect();
 
       // Check if mouse is outside both the highlighted element and the popup
-      if (!isMouseInElement(e, highlightedRect) && !isMouseInElement(e, popupRect)) {
+      if (
+        !isMouseInElement(e, highlightedRect) &&
+        !isMouseInElement(e, popupRect)
+      ) {
         removePopup();
       }
     }
   },
   { passive: true }
 );
-
 
 // Helper function to check if mouse is inside an element
 function isMouseInElement(mouseEvent, elementRect) {
@@ -233,8 +235,8 @@ function highlightWord(range) {
   // Create and position the popup
   createPopup(highlight);
 
-      // Fetch the definition
-      fetchDefinition(lastWord);
+  // Fetch the definition
+  fetchDefinition(lastWord);
 }
 
 function removeHighlight() {
@@ -260,8 +262,8 @@ function createPopup(highlightElement) {
   popupElement.style.borderRadius = "3px";
   popupElement.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
   popupElement.style.zIndex = "1000";
-  popupElement.style.maxWidth = '500px'; // Limit the width of the popup
-  popupElement.textContent = 'Loading definition...'; // Show loading message
+  popupElement.style.maxWidth = "500px"; // Limit the width of the popup
+  popupElement.textContent = "Loading definition..."; // Show loading message
 
   // Position the popup under the highlighted word
   const rect = highlightElement.getBoundingClientRect();
@@ -278,38 +280,41 @@ function removePopup() {
   }
 }
 
-
 // Add this function to handle API requests
 function fetchDefinition(word) {
   fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
-    .then(response => response.json())
-    .then(data => {
+    .then((response) => response.json())
+    .then((data) => {
       if (Array.isArray(data) && data.length > 0) {
         const entry = data[0];
         let definitionHTML = `<h2>${entry.word}</h2>`;
 
         entry.meanings.forEach((meaning, index) => {
           definitionHTML += `<h3>${index + 1}. ${meaning.partOfSpeech}</h3>`;
-          definitionHTML += '<ul>';
-          meaning.definitions.forEach(def => {
+          definitionHTML += "<ul>";
+          meaning.definitions.forEach((def) => {
             definitionHTML += `<li><strong>Definition:</strong> ${def.definition}`;
             if (def.example) {
               definitionHTML += `<br><em>Example:</em> "${def.example}"`;
             }
-            definitionHTML += '</li>';
+            definitionHTML += "</li>";
           });
-          definitionHTML += '</ul>';
+          definitionHTML += "</ul>";
 
           if (meaning.synonyms.length > 0) {
-            definitionHTML += `<p><strong>Synonyms:</strong> ${meaning.synonyms.join(', ')}</p>`;
+            definitionHTML += `<p><strong>Synonyms:</strong> ${meaning.synonyms.join(
+              ", "
+            )}</p>`;
           }
           if (meaning.antonyms.length > 0) {
-            definitionHTML += `<p><strong>Antonyms:</strong> ${meaning.antonyms.join(', ')}</p>`;
+            definitionHTML += `<p><strong>Antonyms:</strong> ${meaning.antonyms.join(
+              ", "
+            )}</p>`;
           }
         });
 
         if (entry.phonetics && entry.phonetics.length > 0) {
-          const phonetic = entry.phonetics.find(p => p.text && p.audio);
+          const phonetic = entry.phonetics.find((p) => p.text && p.audio);
           if (phonetic) {
             definitionHTML += `<p><strong>Pronunciation:</strong> ${phonetic.text} `;
             definitionHTML += `<audio controls src="${phonetic.audio}">Your browser does not support the audio element.</audio></p>`;
@@ -321,8 +326,8 @@ function fetchDefinition(word) {
         updatePopupContent("Definition not found.");
       }
     })
-    .catch(error => {
-      console.error('Error fetching definition:', error);
+    .catch((error) => {
+      console.error("Error fetching definition:", error);
       updatePopupContent("Error fetching definition.");
     });
 }
@@ -330,6 +335,6 @@ function fetchDefinition(word) {
 // Add this function to update the popup content
 function updatePopupContent(content) {
   if (popupElement) {
-      popupElement.innerHTML = content;
+    popupElement.innerHTML = content;
   }
 }
