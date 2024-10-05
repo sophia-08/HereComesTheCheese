@@ -256,21 +256,45 @@ function createPopup(highlightElement) {
 
   popupElement = document.createElement("div");
   popupElement.style.position = "absolute";
-  popupElement.style.backgroundColor = "white";
-  popupElement.style.border = "1px solid black";
-  popupElement.style.padding = "5px";
-  popupElement.style.borderRadius = "3px";
-  popupElement.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+  popupElement.style.padding = "10px";
+  popupElement.style.borderRadius = "5px";
+  popupElement.style.boxShadow = "0 2px 10px rgba(0,0,0,0.3)";
   popupElement.style.zIndex = "1000";
-  popupElement.style.maxWidth = "500px"; // Limit the width of the popup
-  popupElement.textContent = "Loading definition..."; // Show loading message
+  popupElement.style.maxWidth = "500px";
+  // popupElement.style.fontSize = "14px";
+  popupElement.style.lineHeight = "1.4";
+  popupElement.textContent = "Loading definition...";
+
+  // Set theme-aware styles
+  setThemeAwareStyles(popupElement);
 
   // Position the popup under the highlighted word
   const rect = highlightElement.getBoundingClientRect();
   popupElement.style.left = `${rect.left + window.scrollX}px`;
-  popupElement.style.top = `${rect.bottom + window.scrollY}px`;
+  popupElement.style.top = `${rect.bottom + window.scrollY + 5}px`; // Added 5px gap
 
   document.body.appendChild(popupElement);
+}
+
+function setThemeAwareStyles(element) {
+  // Get the computed styles of the body to determine the theme
+  const bodyStyles = window.getComputedStyle(document.body);
+  const isDarkTheme =
+    bodyStyles.backgroundColor
+      .match(/^rgb\s*\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/i)
+      .slice(1)
+      .map(Number)
+      .reduce((a, b) => a + b) < 382; // Threshold for considering it a dark theme
+
+  if (isDarkTheme) {
+    element.style.backgroundColor = "rgba(40, 40, 40, 0.95)";
+    element.style.color = "#e0e0e0";
+    element.style.border = "1px solid #555";
+  } else {
+    element.style.backgroundColor = "rgba(255, 255, 255, 0.95)";
+    element.style.color = "#333";
+    element.style.border = "1px solid #ccc";
+  }
 }
 
 function removePopup() {
@@ -280,7 +304,7 @@ function removePopup() {
   }
 }
 
-// Add this function to handle API requests
+// Function to handle API requests
 function fetchDefinition(word) {
   fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${word}`)
     .then((response) => response.json())
