@@ -139,19 +139,28 @@ document.addEventListener(
 
     // Add popup removal logic here
     if (highlightedElement && popupElement) {
-      const rect = highlightedElement.getBoundingClientRect();
-      if (
-        e.clientX < rect.left ||
-        e.clientX > rect.right ||
-        e.clientY < rect.top ||
-        e.clientY > rect.bottom
-      ) {
+      const highlightedRect = highlightedElement.getBoundingClientRect();
+      const popupRect = popupElement.getBoundingClientRect();
+
+      // Check if mouse is outside both the highlighted element and the popup
+      if (!isMouseInElement(e, highlightedRect) && !isMouseInElement(e, popupRect)) {
         removePopup();
       }
     }
   },
   { passive: true }
 );
+
+
+// Helper function to check if mouse is inside an element
+function isMouseInElement(mouseEvent, elementRect) {
+  return (
+    mouseEvent.clientX >= elementRect.left &&
+    mouseEvent.clientX <= elementRect.right &&
+    mouseEvent.clientY >= elementRect.top &&
+    mouseEvent.clientY <= elementRect.bottom
+  );
+}
 
 document.addEventListener("keydown", (e) => {
   // Check if the pressed key combination is Ctrl+Q
