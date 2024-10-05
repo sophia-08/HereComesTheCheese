@@ -124,8 +124,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 //     }
 //   }
 // });
+let lastWord = "";
 let lastKnownMouseX = 0;
 let lastKnownMouseY = 0;
+let highlightedRange = null;
 
 // Track the last known mouse position
 document.addEventListener(
@@ -144,27 +146,38 @@ document.addEventListener("keydown", (e) => {
     // const selection = window.getSelection();
     // const range = selection.rangeCount > 0 ? selection.getRangeAt(0) : document.caretRangeFromPoint(e.clientX, e.clientY);
 
-    const range = document.caretRangeFromPoint(
-      lastKnownMouseX,
-      lastKnownMouseY
-    );
-    if (range) {
-      const word = getWordAtPosition(range.startContainer, range.startOffset);
-      if (word) {
-        // lastWord = word;
-        chrome.runtime.sendMessage({
-          type: "wordUnderCursor",
-          word: word,
-        });
-      }
+    // Remove previous highlight if it exists
+    removeHighlight();
+
+    console.log("Last xy: ", lastKnownMouseX, lastKnownMouseY);
+
+    // Use the last known mouse position
+    const result = getWordAtPosition(lastKnownMouseX, lastKnownMouseY);
+
+    if (result && result.word) {
+      lastWord = result.word;
+      // lastWord = word;
+      chrome.runtime.sendMessage({
+        type: "wordUnderCursor",
+        word: result.word,
+      });
+
+      // Highlight the word
+      highlightWord(result.range);
     }
   }
 });
 
-function getWordAtPosition(node, offset) {
-  if (node.nodeType !== Node.TEXT_NODE) return null;
+function getWordAtPosition(x, y) {
+  const range = document.caretRangeFromPoint(x, y);
+  if (!range) return null;
 
-  const text = node.textContent;
+  const textNode = range.startContainer;
+  const offset = range.startOffset;
+
+  if (textNode.nodeType !== Node.TEXT_NODE) return null;
+
+  const text = textNode.textContent;
   let start = offset;
   let end = offset;
 
@@ -178,5 +191,35 @@ function getWordAtPosition(node, offset) {
     end++;
   }
 
-  return text.slice(start, end);
+  const word = text.slice(start, end);
+  range.setStart(textNode, start);
+  range.setEnd(textNode, end);
+
+  return { word, range };
+}
+
+function highlightWord(range) {
+  const highlight = document.createElement("span");
+  highlight.style.backgroundColor = "lightyellow";
+  highlight.style.display = "inline";
+
+  range.surroundContents(highlight);
+  highlightedRange = range;
+}
+
+function removeHighlight() {
+  if (highlightedRange) {
+    const highlight = highlightedRange.startContainer.parentNode;
+    if (
+      highlight.nodeType === Node.ELEMENT_NODE &&
+      highlight.style.backgroundColor === "lightyellow"
+    ) {
+      const parent = highlight.parentNode;
+      while (highlight.firstChild) {
+        parent.insertBefore(highlight.firstChild, highlight);
+      }
+      parent.removeChild(highlight);
+    }
+    highlightedRange = null;
+  }
 }
