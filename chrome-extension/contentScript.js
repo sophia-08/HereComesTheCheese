@@ -147,7 +147,7 @@ document.addEventListener(
         !isMouseInElement(e, highlightedRect) &&
         !isMouseInElement(e, popupRect)
       ) {
-        removePopup();
+        removeHighlight();
       }
     }
   },
