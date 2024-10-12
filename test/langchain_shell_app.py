@@ -9,11 +9,10 @@ from pydantic import BaseModel, Field
 import subprocess
 import openai
 
-def get_api_key():
+def check_api_key():
     api_key = os.environ.get("OPENAI_API_KEY")
     if not api_key:
-        print("OPENAI_API_KEY environment variable is not set.")
-        api_key = input("Please enter your OpenAI API key: ").strip()
+        raise ValueError("OPENAI_API_KEY environment variable is not set. Please set it with your OpenAI API key.")
     return api_key
 
 def execute_shell_command(command: str) -> str:
@@ -46,8 +45,8 @@ prompt = ChatPromptTemplate.from_messages([
     ("ai", "{agent_scratchpad}"),
 ])
 
-def setup_agent(api_key):
-    print(f"Using API key: {api_key[:5]}...{api_key[-5:]}")  # Print first and last 5 characters of the API key
+def setup_agent():
+    api_key = check_api_key()
     llm = ChatOpenAI(temperature=0, api_key=api_key)
     tools = [shell_command_tool]
     agent = create_react_agent(llm, tools, prompt)
@@ -58,16 +57,15 @@ def main():
     print("Enter your request, and the AI will interpret it and suggest an appropriate command.")
     print("Type 'exit' to quit.")
 
-    api_key = get_api_key()
-    
     try:
-        agent_executor = setup_agent(api_key)
+        agent_executor = setup_agent()
+    except ValueError as e:
+        print(f"Error: {e}")
+        print("Please set the OPENAI_API_KEY environment variable and try again.")
+        return
     except openai.AuthenticationError as e:
         print(f"Authentication Error: {e}")
         print("Please check your OpenAI API key and ensure it's correct.")
-        return
-    except Exception as e:
-        print(f"An unexpected error occurred during setup: {e}")
         return
 
     while True:
