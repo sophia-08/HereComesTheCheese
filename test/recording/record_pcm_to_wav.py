@@ -91,7 +91,7 @@ if __name__ == '__main__':
     argparser.add_argument(
         '-p',
         '--port',
-        default='/dev/cu.usbmodem14101',
+        default='/dev/cu.usbmodem14601',
         help='port for connection to the device')
 
     argparser.add_argument(
