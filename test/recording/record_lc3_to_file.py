@@ -3,10 +3,31 @@ import sys
 import serial
 import logging
 import argparse
+import wave, struct
 
 logging.basicConfig(level=logging.INFO)
 
-commands = [b"", b"rec_ok", b"init_ok", b"fi"]
+commands = [b"", b"rec_ok", b"init_ok", b"fi", b"pcm", b"pcm_end", b"lc3", b"lc3_end"]
+
+sampleRate = 16000 # hertz
+duration = 3 # seconds
+
+def write_wav_data(raw_sound, filename):
+    logging.debug(raw_sound)
+
+    obj = wave.open(filename, 'w')
+    obj.setnchannels(1) # mono
+    obj.setsampwidth(2)
+    obj.setframerate(sampleRate)
+
+    for value in raw_sound:
+        try:
+            data = struct.pack('<h', value)
+            obj.writeframesraw(data)
+        except:
+            logging.info("wrong ", value)
+    obj.close()
+
 
 def write_compressed_data(raw_data, filename):
     logging.debug(f"Writing {len(raw_data)} bytes to {filename}")
@@ -24,29 +45,45 @@ def main(args):
         try:
             logging.info('READY') 
 
-            raw_data = []
-            recording = False
+            lc3_raw_data = []
+            recording_lc3 = False
+            raw_sound = []
+            recording_sound = False
 
             while True:
                 recv = ser.readline().rstrip()
                 
-                if recv == b"rec_ok":
-                    logging.info('Start receive')
-                    recording = True
-                elif recv == b"fi":
-                    logging.info('Finish receive')
+                if recv == b"lc3":
+                    logging.info('Start receive lc3')
+                    recording_lc3 = True
+                elif recv == b"lc3_end":
+                    logging.info('Finish receive lc3')
+                    recording_lc3 = False
                     break
-                elif recording and recv not in commands:
-                    raw_data.append(recv)
-                    raw_data.append(b'\n')
+                if recv == b"pcm":
+                    logging.info('Start receive pcm')
+                    recording_sound = True
+                elif recv == b"pcm_end":
+                    logging.info('Finish receive pcm')
+                    recording_sound = False
+                elif recording_lc3 and recv not in commands:
+                    lc3_raw_data.append(recv)
+                    lc3_raw_data.append(b'\n')
+                elif recording_sound and recv not in commands:
+                    raw_sound.append(int(recv))
+                    # raw_sound.append(b'\n')
                 
-            if raw_data:
-                logging.info("Writing file")
-                filename = f"{args.filename}_{i}{args.extension}"
-                write_compressed_data(raw_data, filename)
-                i += 1
-            else:
-                logging.info("No data received between 'rec_ok' and 'fi'")
+            if lc3_raw_data:
+                filename = args.filename + str(i) + ".lc3"
+                logging.info("Writing "+filename)
+                write_compressed_data(lc3_raw_data, filename)
+                
+            if raw_sound:
+                filename = args.filename + str(i) + ".wav"
+                logging.info("Writing "+ filename)
+                write_wav_data(raw_sound, filename)
+
+            i += 1
 
         except KeyboardInterrupt:
             logging.info('Exiting script')            
