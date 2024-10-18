@@ -29,12 +29,29 @@ def write_wav_data(raw_sound, filename):
     obj.close()
 
 
+wrote=0
 def write_compressed_data(raw_data, filename):
     logging.debug(f"Writing {len(raw_data)} bytes to {filename}")
     with open(filename, 'wb') as f:
         for data in raw_data:
             f.write(data)
+    with open(filename+".bin", 'wb') as f1:
+       header=b'\x1c\xcc\x12\x00\xa0\x00\xa0\x00\x01\x00\xe8\x03\x00\x00\xa0\xc3\x00\x00'
+       f1.write(header)
+       wrote=0
+       for item in raw_data:
+           logging.info(item)
+           if isinstance(item, bytes):
+            #    f.write(f'{int(item):02x}')
+                if (item != b'\n'):
+                    if (wrote % 20 == 0):
+                        f1.write(b'\x14\x00')
+                    f1.write(bytes([int(item)]))
+                    wrote += 1
+
     logging.info(f"Data written to {filename}")
+
+     
 
 def main(args):
     i = 1
