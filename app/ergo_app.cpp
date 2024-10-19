@@ -247,7 +247,7 @@ public:
 
     m_server->sendToClients(jsonReport);
     log("Input report received and sent to clients. Length: " +
-        std::to_string(reportLength));
+        std::to_string(reportLength) + ": "  + jsonReport);
   }
 
   void registerInputReportCallback() {
