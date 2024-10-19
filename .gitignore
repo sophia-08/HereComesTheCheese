@@ -17,3 +17,4 @@ resources/.arch-internal-preview.css
 out/
 *.wav
 *.lc3
+bin/

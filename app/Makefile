@@ -1,6 +1,6 @@
 CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra
-LDFLAGS = -framework IOKit -framework CoreFoundation
+LDFLAGS = -framework IOKit -framework CoreFoundation -L lib -llc3
 
 OUTDIR = out
 
