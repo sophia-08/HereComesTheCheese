@@ -18,6 +18,10 @@
 // Added for logging
 #include <fstream>
 
+#include "lc3_cpp.h"
+
+lc3::Decoder decoder(10000, 16000);
+
 // Simple JSON class
 class JSON {
 public:
@@ -237,6 +241,20 @@ public:
 
   void handleInputReport(uint8_t *report, CFIndex reportLength) {
     std::stringstream ss;
+
+    #define BUF_SIZE 170
+    int16_t pcm[BUF_SIZE];
+    memset(pcm, 0, BUF_SIZE*2);
+    if (report[0] == 0x02) {
+      //Cutsomer report
+      decoder.Decode(&report[1], 20, pcm);
+          std::cout << std::hex << std::setfill('0');
+      for (int i=0; i<BUF_SIZE; i++) {
+        std::cout << std::setw(4) << static_cast<uint16_t>( pcm[i]) << " ";
+      }
+      std::cout << std::endl  << std::dec;
+    }
+
     ss << std::hex << std::setfill('0');
     for (CFIndex i = 0; i < reportLength; i++) {
       ss << std::setw(2) << static_cast<int>(report[i]);
@@ -247,7 +265,7 @@ public:
 
     m_server->sendToClients(jsonReport);
     log("Input report received and sent to clients. Length: " +
-        std::to_string(reportLength) + ": "  + jsonReport);
+        std::to_string(reportLength) + ": " + jsonReport);
   }
 
   void registerInputReportCallback() {
