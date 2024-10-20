@@ -19,8 +19,10 @@
 #include <fstream>
 
 #include "lc3_cpp.h"
+#include "wave.h"
 
 lc3::Decoder decoder(10000, 16000);
+std::vector<int16_t> pcm_data;
 
 // Simple JSON class
 class JSON {
@@ -247,12 +249,35 @@ public:
     memset(pcm, 0, BUF_SIZE*2);
     if (report[0] == 0x02) {
       //Cutsomer report
-      decoder.Decode(&report[1], 20, pcm);
-          std::cout << std::hex << std::setfill('0');
-      for (int i=0; i<BUF_SIZE; i++) {
-        std::cout << std::setw(4) << static_cast<uint16_t>( pcm[i]) << " ";
+      bool end = true;
+      for (int i=5; i<10; i++) {
+        if (report[i] != 'f') {
+          end = false;
+        }
       }
-      std::cout << std::endl  << std::dec;
+      if (end == false) {
+        decoder.Decode(&report[1], 20, pcm);
+        for (int i=0; i<160; i++) {
+          pcm_data.push_back(pcm[i]);
+        }
+        // std::cout << std::hex << std::setfill('0');
+        // for (int i=0; i<BUF_SIZE; i++) {
+        //   std::cout << std::setw(4) << static_cast<uint16_t>( pcm[i]) << " ";
+        // }
+        // std::cout << std::endl  << std::dec;
+      }else{
+        FILE  *fp;
+        std::cout << "Save file " << pcm_data.size() << std::endl;
+        if ((fp = fopen("out.wav", "wb")) == NULL)  {
+            std::cerr << "Cannot create file";    
+            return;
+        }
+        wave_write_header(fp, 16, 2, 16000, 1, pcm_data.size()-320);
+
+        wave_write_pcm(fp,2,pcm_data.data()+320,1,0,pcm_data.size()-320);
+        fclose(fp);
+        pcm_data.clear();
+      }
     }
 
     ss << std::hex << std::setfill('0');
