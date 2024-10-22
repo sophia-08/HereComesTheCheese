@@ -17,9 +17,111 @@
 #include <cpr/cpr.h>
 // Added for logging
 #include <fstream>
+#include <nlohmann/json.hpp>
 
 #include "lc3_cpp.h"
 #include "wave.h"
+using json = nlohmann::json;
+
+
+class CommandExecutor {
+public:
+    static void execute(const json& response) {
+        std::cout << "execute: " << response << std::endl;
+        try {
+            if (!response.contains("command")) {
+                std::cout << "No command in resp: " << response << std::endl;
+                return;
+            }
+            
+            std::string command = response["command"];
+            if (command == "launch browser") {
+                if (!response.contains("parameter")) {
+                    std::cout << "No parameter in resp: " << response << std::endl;
+                    return;
+                }
+                std::string parameter = response["parameter"];
+                #ifdef __APPLE__
+                    std::string cmd = "open -a \"Google Chrome\" " + parameter;
+                #else
+                    std::string cmd = "google-chrome " + parameter;
+                #endif
+                std::cout << "run: " << cmd << std::endl;
+                system(cmd.c_str());
+            }else if (command == "translate") {
+
+            }
+            else if (command == "definition") {
+
+            }
+            else if (command == "summarize") {
+
+            }
+            else if (command == "unknown") {
+            }
+        } catch (const json::exception& e) {
+            std::cerr << "Error processing command: " << e.what() << std::endl;
+        }
+    }
+};
+
+class OpenAIClient {
+private:
+  std::string api_key;
+  std::string system_role;
+
+public:
+  OpenAIClient(const std::string &system_message = "") {
+    const char *env_key = std::getenv("OPENAI_API_KEY");
+    if (!env_key) {
+      throw std::runtime_error("OPENAI_API_KEY environment variable not set");
+    }
+    api_key = env_key;
+    system_role = system_message;
+  }
+
+  void processResponse(const std::string &text) {
+    try {
+      json response = json::parse(text);
+      std::cout << "\nOpenAIClient::processResponse Response: " << text << "\n\n";
+      CommandExecutor::execute(response);
+    } catch (const json::exception &e) {
+      std::cout << "\nOpenAIClient::processResponse except, Response: " << text << "\n\n";
+    }
+  }
+
+  std::string generateText(const std::string &prompt) {
+    json messages = json::array();
+
+    if (!system_role.empty()) {
+      messages.push_back({{"role", "system"}, {"content", system_role}});
+    }
+
+    messages.push_back({{"role", "user"}, {"content", prompt}});
+
+    json request_data = {{"model", "gpt-3.5-turbo"}, {"messages", messages}};
+
+    auto response =
+        cpr::Post(cpr::Url{"https://api.openai.com/v1/chat/completions"},
+                  cpr::Header{{"Content-Type", "application/json"},
+                              {"Authorization", "Bearer " + api_key}},
+                  cpr::Body{request_data.dump()});
+
+    if (response.status_code != 200) {
+      return "Error: " + std::to_string(response.status_code) + " - " +
+             response.text;
+    }
+
+    try {
+      json response_json = json::parse(response.text);
+      processResponse(response_json["choices"][0]["message"]["content"]);
+    } catch (json::exception &e) {
+      return "JSON parsing error: " + std::string(e.what());
+    }
+    return "";
+  }
+};
+
 
 lc3::Decoder decoder(10000, 16000);
 std::vector<int16_t> pcm_data;
@@ -333,9 +435,22 @@ public:
             // Your PCM data
             // std::vector<int16_t> audioData; // Your 16-bit PCM samples
             
-            WhisperClient client("http://localhost:8080");
-            std::string transcription = client.transcribe(pcm_data);
+            WhisperClient whisper_client("http://localhost:8080");
+            std::string transcription = whisper_client.transcribe(pcm_data);
             std::cout << "Transcription: " << transcription << std::endl;
+
+    std::string system_message =
+        "You are a helpful AI assistant. Be concise "
+        "and clear in your responses.You will be given one short sentense, "
+        "your response will be mapped to a list of commands. The list are "
+        "['translate', 'definition', 'launch browser', 'summarize', "
+        "'unknown']. Your resposne must in JSON,  with only two attributes, "
+        "'command' and 'parameter'. 'command' must in the commnd list, if you "
+        "do not know, use 'unknown'. 'parameter' is optional, for example, for "
+        "'launch browser', parameter may be the URL of a website";
+    OpenAIClient ai_client(system_message);
+      std::string response = ai_client.generateText(transcription);
+
         } catch (const std::exception& e) {
             std::cerr << "Error: " << e.what() << std::endl;
         }
