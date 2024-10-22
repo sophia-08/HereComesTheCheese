@@ -52,6 +52,48 @@ public:
   }
 };
 
+
+
+class LLMClient {
+private:
+    std::string server_url;
+    std::string system_role;
+
+public:
+    LLMClient(const std::string& system_message = "") 
+        : server_url("http://localhost:8080/completion"), 
+          system_role(system_message) {}
+
+    std::string generateText(const std::string& prompt) {
+        std::string full_prompt = system_role.empty() ? prompt : 
+            system_role + "\n\nUser: " + prompt + "\nAssistant: ";
+
+        json request_data = {
+            {"prompt", full_prompt},
+            {"temperature", 0.7},
+            {"max_tokens", 2000},
+            {"stop", json::array({"User:", "\n"})}
+        };
+
+        auto response = cpr::Post(
+            cpr::Url{server_url},
+            cpr::Header{{"Content-Type", "application/json"}},
+            cpr::Body{request_data.dump()}
+        );
+
+        if (response.status_code != 200) {
+            return "Error: " + std::to_string(response.status_code) + " - " + response.text;
+        }
+
+        try {
+            json response_json = json::parse(response.text);
+            return response_json["content"];
+        } catch (json::exception& e) {
+            return "JSON parsing error: " + std::string(e.what());
+        }
+    }
+};
+
 int main() {
   try {
     std::string system_message =
@@ -63,7 +105,8 @@ int main() {
         "'command' and 'parameter'. 'command' must in the commnd list, if you "
         "do not know, use 'unknown'. 'parameter' is optional, for example, for "
         "'launch browser', parameter may be the URL of a website ";
-    OpenAIClient client(system_message);
+    // OpenAIClient client(system_message);
+    LLMClient client(system_message);
     std::string question;
 
     std::cout << "Enter your question (Ctrl+D to exit): ";
