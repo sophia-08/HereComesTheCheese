@@ -1,6 +1,7 @@
 #include <IOKit/hid/IOHIDManager.h>
 #include <atomic>
 #include <chrono>
+#include <cpr/cpr.h>
 #include <cstring>
 #include <ctime>
 #include <iomanip>
@@ -14,7 +15,6 @@
 #include <thread>
 #include <unistd.h>
 #include <vector>
-#include <cpr/cpr.h>
 // Added for logging
 #include <fstream>
 #include <nlohmann/json.hpp>
@@ -22,71 +22,59 @@
 #include "lc3_cpp.h"
 #include "wave.h"
 using json = nlohmann::json;
-
-
-class CommandExecutor {
+class OpenAIClient;
+class ProxySocketServer;
+class HIDDevice {
 public:
-    static void execute(const json& response) {
-        std::cout << "execute: " << response << std::endl;
-        try {
-            if (!response.contains("command")) {
-                std::cout << "No command in resp: " << response << std::endl;
-                return;
-            }
-            
-            std::string command = response["command"];
-            if (command == "launch browser") {
-                if (!response.contains("parameter")) {
-                    std::cout << "No parameter in resp: " << response << std::endl;
-                    return;
-                }
-                std::string parameter = response["parameter"];
-                #ifdef __APPLE__
-                    std::string cmd = "open -a \"Google Chrome\" " + parameter;
-                #else
-                    std::string cmd = "google-chrome " + parameter;
-                #endif
-                std::cout << "run: " << cmd << std::endl;
-                system(cmd.c_str());
-            }else if (command == "translate") {
+  HIDDevice(IOHIDDeviceRef device, ProxySocketServer *server);
+  ~HIDDevice();
 
-            }
-            else if (command == "definition") {
+  void execute(const json &response);
+  void sendReport(const std::vector<uint8_t> &report);
+  static void inputReportCallback(void *context, IOReturn result, void *sender,
+                                  IOHIDReportType type, uint32_t reportID,
+                                  uint8_t *report, CFIndex reportLength);
+  void handleInputReport(uint8_t *report, CFIndex reportLength);
+  void registerInputReportCallback();
+  void disconnect();
+  bool isConnected() const;
+  IOHIDDeviceRef getDevice() const;
 
-            }
-            else if (command == "summarize") {
-
-            }
-            else if (command == "unknown") {
-            }
-        } catch (const json::exception& e) {
-            std::cerr << "Error processing command: " << e.what() << std::endl;
-        }
-    }
+private:
+  IOHIDDeviceRef m_device;
+  ProxySocketServer *m_server;
+  uint8_t m_report[256];
+  bool m_connected;
+  std::unique_ptr<OpenAIClient> m_ai_client; // Store OpenAIClient as a member
 };
 
 class OpenAIClient {
 private:
   std::string api_key;
   std::string system_role;
+  HIDDevice *_device;
 
 public:
-  OpenAIClient(const std::string &system_message = "") {
+  OpenAIClient(HIDDevice *device, const std::string &system_message = "")
+      : _device(device), system_role(system_message) {
     const char *env_key = std::getenv("OPENAI_API_KEY");
     if (!env_key) {
       throw std::runtime_error("OPENAI_API_KEY environment variable not set");
     }
     api_key = env_key;
-    system_role = system_message;
   }
 
   void processResponse(const std::string &text) {
     try {
       json response = json::parse(text);
-      std::cout << "\nOpenAIClient::processResponse Response: " << text << "\n\n";
-      CommandExecutor::execute(response);
+      std::cout << "\nOpenAIClient::processResponse Response: " << text
+                << "\n\n";
+      if (_device) {
+        _device->execute(response);
+      }
     } catch (const json::exception &e) {
-      std::cout << "\nOpenAIClient::processResponse except, Response: " << text << "\n\n";
+      std::cout << "\nOpenAIClient::processResponse except, Response: " << text
+                << "\n\n";
     }
   }
 
@@ -122,60 +110,57 @@ public:
   }
 };
 
-
 lc3::Decoder decoder(10000, 16000);
 std::vector<int16_t> pcm_data;
 
 struct WAVHeader {
-    char riff[4] = {'R', 'I', 'F', 'F'};
-    uint32_t fileSize;
-    char wave[4] = {'W', 'A', 'V', 'E'};
-    char fmt[4] = {'f', 'm', 't', ' '};
-    uint32_t fmtSize = 16;
-    uint16_t audioFormat = 1;  // PCM
-    uint16_t numChannels = 1;  // Mono
-    uint32_t sampleRate = 16000;
-    uint32_t byteRate = 32000;  // sampleRate * numChannels * bitsPerSample/8
-    uint16_t blockAlign = 2;    // numChannels * bitsPerSample/8
-    uint16_t bitsPerSample = 16;
-    char data[4] = {'d', 'a', 't', 'a'};
-    uint32_t dataSize;
+  char riff[4] = {'R', 'I', 'F', 'F'};
+  uint32_t fileSize;
+  char wave[4] = {'W', 'A', 'V', 'E'};
+  char fmt[4] = {'f', 'm', 't', ' '};
+  uint32_t fmtSize = 16;
+  uint16_t audioFormat = 1; // PCM
+  uint16_t numChannels = 1; // Mono
+  uint32_t sampleRate = 16000;
+  uint32_t byteRate = 32000; // sampleRate * numChannels * bitsPerSample/8
+  uint16_t blockAlign = 2;   // numChannels * bitsPerSample/8
+  uint16_t bitsPerSample = 16;
+  char data[4] = {'d', 'a', 't', 'a'};
+  uint32_t dataSize;
 };
 
 class WhisperClient {
 public:
-    WhisperClient(const std::string& serverUrl) : baseUrl(serverUrl) {}
+  WhisperClient(const std::string &serverUrl) : baseUrl(serverUrl) {}
 
-    std::string transcribe(const std::vector<int16_t>& pcmData) {
-        // Create WAV header
-        WAVHeader header;
-        header.dataSize = pcmData.size() * sizeof(int16_t);
-        header.fileSize = header.dataSize + sizeof(WAVHeader) - 8;  // -8 for RIFF header
+  std::string transcribe(const std::vector<int16_t> &pcmData) {
+    // Create WAV header
+    WAVHeader header;
+    header.dataSize = pcmData.size() * sizeof(int16_t);
+    header.fileSize =
+        header.dataSize + sizeof(WAVHeader) - 8; // -8 for RIFF header
 
-        // Combine header and PCM data
-        std::vector<char> wavFile(sizeof(WAVHeader) + header.dataSize);
-        std::memcpy(wavFile.data(), &header, sizeof(WAVHeader));
-        std::memcpy(wavFile.data() + sizeof(WAVHeader), pcmData.data(), header.dataSize);
-        
-        cpr::Multipart multipart{
-            {"file", cpr::Buffer{wavFile.begin(), wavFile.end(), "audio.wav"}},
-            {"response_format", "text"}
-        };
+    // Combine header and PCM data
+    std::vector<char> wavFile(sizeof(WAVHeader) + header.dataSize);
+    std::memcpy(wavFile.data(), &header, sizeof(WAVHeader));
+    std::memcpy(wavFile.data() + sizeof(WAVHeader), pcmData.data(),
+                header.dataSize);
 
-        auto response = cpr::Post(
-            cpr::Url{baseUrl + "/inference"},
-            multipart
-        );
+    cpr::Multipart multipart{
+        {"file", cpr::Buffer{wavFile.begin(), wavFile.end(), "audio.wav"}},
+        {"response_format", "text"}};
 
-        if (response.status_code != 200) {
-            throw std::runtime_error("Server error: " + response.text);
-        }
+    auto response = cpr::Post(cpr::Url{baseUrl + "/inference"}, multipart);
 
-        return response.text;
+    if (response.status_code != 200) {
+      throw std::runtime_error("Server error: " + response.text);
     }
 
+    return response.text;
+  }
+
 private:
-    std::string baseUrl;
+  std::string baseUrl;
 };
 
 // Simple JSON class
@@ -228,8 +213,6 @@ private:
 
 // Updated logging function
 void log(const std::string &message) { Logger::getInstance().log(message); }
-
-class HIDDevice;
 
 class ProxySocketServer {
 public:
@@ -364,12 +347,12 @@ private:
 
 class HIDDevice {
 public:
-  HIDDevice(IOHIDDeviceRef device, ProxySocketServer *server)
+  HIDDevice::HIDDevice(IOHIDDeviceRef device, ProxySocketServer *server)
       : m_device(device), m_server(server), m_connected(true) {
     IOHIDDeviceOpen(m_device, kIOHIDOptionsTypeNone);
+    m_ai_client = std::make_unique<OpenAIClient>(this, "system_message");
     log("HIDDevice created");
   }
-
   ~HIDDevice() {
     if (m_connected) {
       IOHIDDeviceClose(m_device, kIOHIDOptionsTypeNone);
@@ -392,26 +375,78 @@ public:
     (void)reportID;
 
     auto *device = static_cast<HIDDevice *>(context);
+    std::cout << "inputReportCallback id: " << reportID
+              << ",len: " << reportLength << std::endl;
     device->handleInputReport(report, reportLength);
   }
 
+  void execute(const json &response) {
+    std::cout << "execute: " << response << std::endl;
+    try {
+      if (!response.contains("command")) {
+        std::cout << "No command in resp: " << response << std::endl;
+        return;
+      }
+
+      std::string command = response["command"];
+      if (command == "launch browser") {
+        if (!response.contains("parameter")) {
+          std::cout << "No parameter in resp: " << response << std::endl;
+          return;
+        }
+        std::string parameter = response["parameter"];
+#ifdef __APPLE__
+        std::string cmd = "open -a \"Google Chrome\" " + parameter;
+#else
+        std::string cmd = "google-chrome " + parameter;
+#endif
+        std::cout << "run: " << cmd << std::endl;
+        system(cmd.c_str());
+      } else if (command == "youtube") {
+        std::string cmd = "open -a \"YouTube\"";
+        system(cmd.c_str());
+
+      } else if (command == "translate") {
+
+      } else if (command == "definition") {
+        std::string jsonReport =
+            JSON::makeObject({{"type", "hid_cmd"}, {"data", "definition"}});
+
+        m_server->sendToClients(jsonReport);
+        log("Input report received and sent to clients: " + jsonReport);
+      } else if (command == "summarize") {
+
+      } else if (command == "unknown") {
+      }
+    } catch (const json::exception &e) {
+      std::cerr << "Error processing command: " << e.what() << std::endl;
+    }
+  }
+
+#define BUF_SIZE 170
   void handleInputReport(uint8_t *report, CFIndex reportLength) {
     std::stringstream ss;
 
-    #define BUF_SIZE 170
     int16_t pcm[BUF_SIZE];
-    memset(pcm, 0, BUF_SIZE*2);
+    memset(pcm, 0, BUF_SIZE * 2);
+
+#if 1
     if (report[0] == 0x02) {
-      //Cutsomer report
+      // Cutsomer report
       bool end = true;
-      for (int i=5; i<10; i++) {
+      for (int i = 5; i < 10; i++) {
         if (report[i] != 'f') {
           end = false;
         }
       }
       if (end == false) {
         decoder.Decode(&report[1], 20, pcm);
-        for (int i=0; i<160; i++) {
+        for (int i = 0; i < 160; i++) {
+          pcm_data.push_back(pcm[i]);
+        }
+
+        decoder.Decode(&report[21], 20, pcm);
+        for (int i = 0; i < 160; i++) {
           pcm_data.push_back(pcm[i]);
         }
         // std::cout << std::hex << std::setfill('0');
@@ -419,45 +454,62 @@ public:
         //   std::cout << std::setw(4) << static_cast<uint16_t>( pcm[i]) << " ";
         // }
         // std::cout << std::endl  << std::dec;
-      }else{
-        FILE  *fp;
-        std::cout << "Save file " << pcm_data.size() << std::endl;
-        if ((fp = fopen("out.wav", "wb")) == NULL)  {
-            std::cerr << "Cannot create file";    
-            return;
-        }
-        wave_write_header(fp, 16, 2, 16000, 1, pcm_data.size()-320);
+      } else {
 
-        wave_write_pcm(fp,2,pcm_data.data()+320,1,0,pcm_data.size()-320);
+#if 1
+        OpenAIClient ai_client(this, "system_message");
+        std::string ss = "{\"command\":\"launch "
+                         "browser\",\"parameter\":\"https://www.youtube.com/"
+                         "results?search_query=purple+rain\"}";
+        // json response_json = json::parse(ss);
+        ai_client.processResponse(ss);
+        return;
+
+#else
+        FILE *fp;
+        std::cout << "Save file " << pcm_data.size() << std::endl;
+        if ((fp = fopen("out.wav", "wb")) == NULL) {
+          std::cerr << "Cannot create file";
+          return;
+        }
+        wave_write_header(fp, 16, 2, 16000, 1, pcm_data.size() - 320);
+
+        wave_write_pcm(fp, 2, pcm_data.data() + 320, 1, 0,
+                       pcm_data.size() - 320);
         fclose(fp);
 
         try {
-            // Your PCM data
-            // std::vector<int16_t> audioData; // Your 16-bit PCM samples
-            
-            WhisperClient whisper_client("http://localhost:8080");
-            std::string transcription = whisper_client.transcribe(pcm_data);
-            std::cout << "Transcription: " << transcription << std::endl;
+          // Your PCM data
+          // std::vector<int16_t> audioData; // Your 16-bit PCM samples
 
-    std::string system_message =
-        "You are a helpful AI assistant. Be concise "
-        "and clear in your responses.You will be given one short sentense, "
-        "your response will be mapped to a list of commands. The list are "
-        "['translate', 'definition', 'launch browser', 'summarize', "
-        "'unknown']. Your resposne must in JSON,  with only two attributes, "
-        "'command' and 'parameter'. 'command' must in the commnd list, if you "
-        "do not know, use 'unknown'. 'parameter' is optional, for example, for "
-        "'launch browser', parameter may be the URL of a website";
-    OpenAIClient ai_client(system_message);
-      std::string response = ai_client.generateText(transcription);
+          WhisperClient whisper_client("http://localhost:8080");
+          std::string transcription = whisper_client.transcribe(pcm_data);
+          std::cout << "Transcription: " << transcription << std::endl;
 
-        } catch (const std::exception& e) {
-            std::cerr << "Error: " << e.what() << std::endl;
+          std::string system_message =
+              "You are a helpful AI assistant. Be concise and clear in your "
+              "responses.You will be given one short sentense, your response "
+              "will be mapped to a list of commands. The list are "
+              "['translate', 'definition', 'launch browser', 'summarize', "
+              "'unknown']. Your resposne must in JSON,  with only two "
+              "attributes, 'command' and 'parameter'. 'command' must in the "
+              "commnd list, if you do not know, use 'unknown'. 'parameter' is "
+              "optional, for example, for 'launch browser', parameter may be "
+              "the URL of a website";
+          OpenAIClient ai_client(system_message);
+          std::string response = ai_client.generateText(transcription);
+
+        } catch (const std::exception &e) {
+          std::cerr << "Error: " << e.what() << std::endl;
         }
+
         pcm_data.clear();
+#endif
       }
     }
+#endif
 
+#if 0
     ss << std::hex << std::setfill('0');
     for (CFIndex i = 0; i < reportLength; i++) {
       ss << std::setw(2) << static_cast<int>(report[i]);
@@ -469,6 +521,7 @@ public:
     m_server->sendToClients(jsonReport);
     log("Input report received and sent to clients. Length: " +
         std::to_string(reportLength) + ": " + jsonReport);
+#endif
   }
 
   void registerInputReportCallback() {
@@ -492,7 +545,7 @@ public:
 private:
   IOHIDDeviceRef m_device;
   ProxySocketServer *m_server;
-  uint8_t m_report[64]; // Adjust size as needed
+  uint8_t m_report[256]; // Adjust size as needed
   bool m_connected;
 };
 
@@ -616,3 +669,26 @@ int main() {
   Logger::getInstance().close();
   return 0;
 }
+
+#if 0
+{
+  "command": "launch browser",
+  "parameter": "https://en.wikipedia.org/wiki/Progressive_web_application"
+}
+"{\"command\":\"launch browser\",\"parameter\":\"https://en.wikipedia.org/wiki/Progressive_web_application\"}"
+open -a "Google Chrome" https://en.wikipedia.org/wiki/Progressive_web_application
+
+{
+  "command": "launch browser",
+  "parameter": "https://www.youtube.com/results?search_query=purple+rain"
+}
+"{\"command\":\"launch browser\",\"parameter\":\"https://www.youtube.com/results?search_query=purple+rain\"}"
+open -a "Google Chrome" https://www.youtube.com/results?search_query=purple+rain
+
+{
+        "command": "launch browser",
+        "parameter": "https://www.youtube.com/watch?v=TvnYmWpD_T8"
+}
+
+" {\"command\":\"launch browser\",\"parameter\":\"https://www.youtube.com/watch?v=TvnYmWpD_T8\"}"
+#endif
