@@ -151,6 +151,28 @@ document.getElementById("summarize").addEventListener("click", async () => {
     console.log("getDOMContent response=", response);
     if (response && response.content) {
       document.getElementById("summary").textContent = response.content.textContent;
+
+      systemPrompt = "Please summarize, and identify up to 5 sections that are assert fact and most related. Please reply with a json object containing a \"summary\" and \"facts\" key.  The value of \"summary\" is a short summary of the text. The value of \"facts\" is an array value of exact string matches to the original text. The facts must be exact matches of the sentence fragments from the original text. This \"facts\" will later be used by a chrome extension to mark spans of the original text, so the fact strings must be exact matches of the original text. The response shall only has the JSON object, nothing else."
+      chrome.storage.local.get(["chatgptApiKey"], (result) => {
+        if (result.chatgptApiKey) {
+          chrome.runtime.sendMessage({
+            type: "summarize",
+            apiKey: result.chatgptApiKey,
+            userPrompt: response.content.textContent,
+            systemPrompt: systemPrompt
+          }).then(result1 => {
+            console.log("chatgptResult: ", result1.data);
+            document.getElementById("chatgptResult").textContent = result1.data;
+          }).catch(error => {
+            // Handle any errors here
+            console.error('Error:', error);
+          });
+        } else {
+          document.getElementById("chatgptResult").textContent =
+            "Please set your API key first.";
+        }
+      });
+
     } else {
       throw new Error("Failed to get DOM content");
     }

@@ -75,6 +75,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "wordUnderCursor":
       console.log("wordUnderCursor:", message.word);
       break;
+    case "summarize":
+      // Return true to indicate we'll send a response asynchronously
+      (async () => {
+        try {
+          const result = await askLLM(
+            message.systemPrompt,
+            message.userPrompt,
+            message.apiKey
+          );
+          console.log("chrome.runtime.onMessage sendResponse", result);
+          sendResponse({ success: true, data: result });
+        } catch (error) {
+          console.error("Error in summarize:", error);
+          sendResponse({ success: false, error: error.message });
+        }
+      })();
+      return true;
+      break;
   }
 });
 
@@ -374,3 +392,49 @@ function handleHidCmd(data) {
 
 // Initialize native messaging connection
 connectNativeHost();
+
+
+// const urlLLM = "http://localhost:8080/v1/chat/completions";
+const urlLLM = "https://api.openai.com/v1/chat/completions";
+async function askLLM(systemPrompt, userPrompt, apiKey) {
+  try {
+
+    console.log("askLLM:", systemPrompt, userPrompt, apiKey);
+
+    const response = await fetch(urlLLM, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",  //"gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        temperature: 0.7,
+        max_tokens: 2000,
+      }),
+    });
+
+
+    console.log("chatgpt raw resp: ", response);
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const chatGPTResponse = data.choices[0].message.content;
+    console.log("chatgpt resp: ", chatGPTResponse);
+    return chatGPTResponse;
+
+  } catch (error) {
+    console.error("Error sending request to ChatGPT:", error);
+    chrome.runtime.sendMessage({
+      type: "chatGPTResponse",
+      response:
+        "Error: Unable to get response from ChatGPT. Please check your API key and try again.",
+    });
+  }
+}
