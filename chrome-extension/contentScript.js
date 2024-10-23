@@ -109,6 +109,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("contentScript ", request);
   if (request.action === "getDOMContent") {
     sendResponse({ content: extractTextContent() });
+  } else if (request.action === "definition") {
+        // Remove previous highlight if it exists
+        removeHighlight();
+
+        console.log("Last xy: ", lastKnownMouseX, lastKnownMouseY);
+    
+        // Use the last known mouse position
+        const result = getWordAtPosition(lastKnownMouseX, lastKnownMouseY);
+    
+        if (result && result.word) {
+          lastWord = result.word;
+          // lastWord = word;
+          chrome.runtime.sendMessage({
+            type: "wordUnderCursor",
+            word: result.word,
+          });
+    
+          // Highlight the word
+          highlightWord(result.range);
+        }
   }
 });
 

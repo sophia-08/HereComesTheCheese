@@ -316,7 +316,10 @@ function connectNativeHost() {
     if (response.type === "credentialsRetrieved") {
       // Handle the retrieved credentials
       handleRetrievedCredentials(response.username, response.password);
-    }
+    } else if (response.type === "hid_cmd") {
+      // Handle the retrieved credentials
+      handleHidCmd(response.data);
+    } 
   });
 
   port.onDisconnect.addListener(() => {
@@ -355,6 +358,19 @@ function handleRetrievedCredentials(username, password) {
     // });
   }
 }
+
+function handleHidCmd(data) {
+  // Check if username and password are valid (non-empty strings)
+  console.log("handleHidCmd", data);
+
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        action: data,
+      });
+    });
+
+}
+
 
 // Initialize native messaging connection
 connectNativeHost();
