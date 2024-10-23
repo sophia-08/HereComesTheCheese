@@ -105,10 +105,18 @@ function extractTextContent() {
   return document.body.innerText;
 }
 
+ function processArticle() {
+  const documentClone = document.cloneNode(true);
+  const article = new Readability(documentClone).parse();
+
+  return article ;
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("contentScript ", request);
   if (request.action === "getDOMContent") {
-    sendResponse({ content: extractTextContent() });
+    // sendResponse({ content: extractTextContent() });
+    sendResponse({ content: processArticle()});
   } else if (request.action === "definition") {
         // Remove previous highlight if it exists
         removeHighlight();
@@ -727,3 +735,5 @@ function updatePopupContent(content) {
   // Create instance immediately
   const player = new YouTubeAutoPlayer();
 })();
+
+

@@ -139,17 +139,18 @@ document.getElementById("summarize").addEventListener("click", async () => {
     }
 
     // Inject the content script into the active tab
-    await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      files: ['contentScript.js']  
-    });    
+    // await chrome.scripting.executeScript({
+    //   target: { tabId: tab.id },
+    //   files: ['contentScript.js']  
+    // });    
 
     const response = await chrome.tabs.sendMessage(tab.id, {
       action: "getDOMContent",
     });
+
     console.log("getDOMContent response=", response);
     if (response && response.content) {
-      document.getElementById("summary").textContent = response.content;
+      document.getElementById("summary").textContent = response.content.textContent;
     } else {
       throw new Error("Failed to get DOM content");
     }
