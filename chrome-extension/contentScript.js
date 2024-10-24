@@ -137,8 +137,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           // Highlight the word
           highlightWord(result.range);
         }
-  } else if (request.action === "checkPlayer") {
-    checkPlayer() ;
   }
 });
 

@@ -377,15 +377,26 @@ function handleRetrievedCredentials(username, password) {
   }
 }
 
-function handleHidCmd(data) {
+function handleHidCmd(cmd) {
   // Check if username and password are valid (non-empty strings)
-  console.log("handleHidCmd", data);
-
+  console.log("handleHidCmd", cmd);
+  if (cmd == "definition") {
+    // send cmd to active tab
     chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
       chrome.tabs.sendMessage(tabs[0].id, {
-        action: data,
+        type: "hid_cmd",
+        target: 'content-script',
+        action: cmd,
       });
     });
+  } else if (cmd == "summarize") {
+    // send cmd to sidepanel  
+    chrome.runtime.sendMessage({
+      type: "hid_cmd",
+      target: 'side-panel',
+      action: cmd,
+    });
+  }
 
 }
 
@@ -413,7 +424,7 @@ async function askLLM(systemPrompt, userPrompt, apiKey) {
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
         ],
-        temperature: 0.7,
+        temperature: 0.0,
         max_tokens: 2000,
       }),
     });

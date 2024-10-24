@@ -94,6 +94,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === "chatGPTResponse") {
     const resultDiv = document.getElementById("chatgptResult");
     resultDiv.textContent = message.response;
+  } else if (message.type == 'hid_cmd') {
+    const cmd = message.action;
+    if (cmd == 'summarize' ) {
+      handleSummarizeClick();
+    }
   }
 });
 
@@ -127,7 +132,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 //   });
 // });
 
-document.getElementById("summarize").addEventListener("click", async () => {
+async function handleSummarizeClick() {
   try {
     const [tab] = await chrome.tabs.query({
       active: true,
@@ -150,7 +155,7 @@ document.getElementById("summarize").addEventListener("click", async () => {
 
     console.log("getDOMContent response=", response);
     if (response && response.content) {
-      document.getElementById("summary").textContent = response.content.textContent;
+      // document.getElementById("summary").textContent = response.content.textContent;
 
       systemPrompt = "Please summarize, and identify up to 5 sections that are assert fact and most related. Please reply with a json object containing a \"summary\" and \"facts\" key.  The value of \"summary\" is a short summary of the text. The value of \"facts\" is an array value of exact string matches to the original text. The facts must be exact matches of the sentence fragments from the original text. This \"facts\" will later be used by a chrome extension to mark spans of the original text, so the fact strings must be exact matches of the original text. The response shall only has the JSON object, nothing else."
       chrome.storage.local.get(["chatgptApiKey"], (result) => {
@@ -162,7 +167,13 @@ document.getElementById("summarize").addEventListener("click", async () => {
             systemPrompt: systemPrompt
           }).then(result1 => {
             console.log("chatgptResult: ", result1.data);
-            document.getElementById("chatgptResult").textContent = result1.data;
+            // document.getElementById("chatgptResult").textContent = result1.data;
+            try {
+              renderGptResult(JSON.parse(result1.data)) ;
+            }catch (error) {
+              console.error("Error: chatgptResult:", error);
+            }
+            
           }).catch(error => {
             // Handle any errors here
             console.error('Error:', error);
@@ -180,4 +191,53 @@ document.getElementById("summarize").addEventListener("click", async () => {
     console.error("Error:", error);
     document.getElementById("summary").textContent = "Error: " + error.message;
   }
-});
+};
+
+document.getElementById("summarize").addEventListener("click", handleSummarizeClick);
+
+const data1 = {
+  summary: "Kamala Harris expressed confidence that the US is ready for a female president, emphasizing that Americans prioritize candidates' capabilities over gender. During an NBC News interview, she highlighted the importance of unity and addressing the concerns of the American people, while also discussing the potential challenges posed by Donald Trump's actions regarding the election results. Harris asserted her focus on campaigning and her commitment to bringing her own policies to address issues like the economy and abortion rights.",
+  facts: [
+      "Kamala Harris said that she has no doubt that the US was ready for a female president, insisting that Americans care more about what candidates can do to help them, rather than presidential contenders' gender.",
+      "Harris was asked why she hasn't leaned into the historic nature of her candidacy – that she is a woman of color running for the presidency.",
+      "The point that most people really care about is: can you do the job, and do you have a plan to actually focus on them?",
+      "This is a person, Donald Trump, who tried to undo the free and fair election, who still denies the will of the people who incited a violent mob to attack the United States Capitol, and 140 law enforcement officers were attacked, some who were killed.",
+      "I don't think we should be making concessions when we're talking about a fundamental freedom to make decisions about your own body."
+  ]
+};
+
+function renderGptResult(data) {
+
+  const content = document.getElementById('chatgptResult');
+  
+  // Clear previous content
+  content.innerHTML = '';
+
+  // Create summary card
+  const summaryCard = document.createElement('div');
+  summaryCard.className = 'card';
+  summaryCard.innerHTML = `
+      <h2 class="card-title">Summary</h2>
+      <p class="summary">${data.summary}</p>
+  `;
+  
+  // Create key points card
+  const factsCard = document.createElement('div');
+  factsCard.className = 'card';
+  factsCard.innerHTML = `
+      <h2 class="card-title">Key Points</h2>
+      ${data.facts.map(fact => `
+          <div class="fact-item">
+              <span class="quote-icon">❝</span>
+              <p>${fact}</p>
+          </div>
+      `).join('')}
+  `;
+  
+  // Append both cards
+  content.appendChild(summaryCard);
+  content.appendChild(factsCard);
+}
+
+// Initialize the page
+// renderGptResult(data1);
