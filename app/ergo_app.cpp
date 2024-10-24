@@ -424,6 +424,30 @@ void HIDDevice::execute(const json &response) {
   }
 }
 
+std::unordered_set<std::string> shortCommands = {"translate", "translated", "definition", "summarize", "summarized"};
+std::string trim(const std::string& str) {
+    const std::string whitespace = " \t\n\r\f\v";
+    std::size_t first = str.find_first_not_of(whitespace);
+    if (first == std::string::npos) return "";
+    std::size_t last = str.find_last_not_of(whitespace);
+    return str.substr(first, last - first + 1);
+}
+
+std::string getFirstWordLower(const std::string& sentence) {
+   std::string trimmed = trim(sentence);
+   std::size_t spacePos = trimmed.find(' ');
+   std::string firstWord = (spacePos == std::string::npos) ? trimmed : trimmed.substr(0, spacePos);
+   std::transform(firstWord.begin(), firstWord.end(), firstWord.begin(), ::tolower);
+   
+   // Remove punctuation
+   firstWord.erase(
+       std::remove_if(firstWord.begin(), firstWord.end(), ::ispunct),
+       firstWord.end()
+   );
+   
+   return trim(firstWord);
+}
+
 #define BUF_SIZE 170
 void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
   std::stringstream ss;
@@ -457,7 +481,7 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
       // std::cout << std::endl  << std::dec;
     } else {
 
-#if 1
+#if 0
       // OpenAIClient ai_client(this, "system_message");
       // std::string ss = "{\"command\":\"launch "
       //                  "browser\",\"parameter\":\"https://www.youtube.com/"
@@ -492,6 +516,16 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
         std::string transcription = whisper_client.transcribe(pcm_data);
         std::cout << "Transcription: " << transcription << std::endl;
 
+        auto cmd = getFirstWordLower(transcription);
+        std::cout << "cmd: " << cmd << "len=" << cmd.size() << std::endl;
+        if (shortCommands.count(cmd.c_str())>0)  {
+          std::string jsonReport =
+              JSON::makeObject({{"type", "hid_cmd"}, {"data", cmd}});
+          m_server->sendToClients(jsonReport);
+          log("Sent short command to clients: " + jsonReport);
+        }
+
+#if 0
         std::string system_message =
             "You are a helpful AI assistant. Be concise and clear in your "
             "responses.You will be given one short sentense, your response "
@@ -502,9 +536,10 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
             "commnd list, if you do not know, use 'unknown'. 'parameter' is "
             "optional, for example, for 'launch browser', parameter may be "
             "the URL of a website";
-        // OpenAIClient ai_client(system_message);
+
         std::string response = m_ai_client->generateText(transcription);
         m_ai_client->processResponse(response);
+#endif
 
       } catch (const std::exception &e) {
         std::cerr << "Error: " << e.what() << std::endl;
