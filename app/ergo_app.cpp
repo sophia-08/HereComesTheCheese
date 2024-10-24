@@ -56,7 +56,7 @@ private:
 
 public:
   OpenAIClient(HIDDevice *device, const std::string &system_message = "")
-      :  system_role(system_message), _device(device){
+      : system_role(system_message), _device(device) {
     const char *env_key = std::getenv("OPENAI_API_KEY");
     if (!env_key) {
       throw std::runtime_error("OPENAI_API_KEY environment variable not set");
@@ -410,11 +410,13 @@ void HIDDevice::execute(const json &response) {
     } else if (command == "definition") {
       std::string jsonReport =
           JSON::makeObject({{"type", "hid_cmd"}, {"data", "definition"}});
-
       m_server->sendToClients(jsonReport);
       log("Input report received and sent to clients: " + jsonReport);
     } else if (command == "summarize") {
-
+      std::string jsonReport =
+          JSON::makeObject({{"type", "hid_cmd"}, {"data", "summarize"}});
+      m_server->sendToClients(jsonReport);
+      log("Input report received and sent to clients: " + jsonReport);
     } else if (command == "unknown") {
     }
   } catch (const json::exception &e) {
@@ -461,8 +463,11 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
       //                  "browser\",\"parameter\":\"https://www.youtube.com/"
       //                  "results?search_query=purple+rain\"}";
 
-            std::string ss = "{\"command\":\"definition\",\"parameter\":\"https://www.youtube.com/"
-                       "results?search_query=purple+rain\"}";
+      // std::string ss = "{\"command\":\"definition\",\"parameter\":\"https://www.youtube.com/"
+      //            "results?search_query=purple+rain\"}";
+
+      std::string ss = "{\"command\":\"summarize\",\"parameter\":\"https://www.youtube.com/"
+                  "results?search_query=purple+rain\"}";
       // json response_json = json::parse(ss);
       m_ai_client-> processResponse(ss);
       return;
@@ -497,8 +502,9 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
             "commnd list, if you do not know, use 'unknown'. 'parameter' is "
             "optional, for example, for 'launch browser', parameter may be "
             "the URL of a website";
-        OpenAIClient ai_client(system_message);
-        std::string response = ai_client.generateText(transcription);
+        // OpenAIClient ai_client(system_message);
+        std::string response = m_ai_client->generateText(transcription);
+        m_ai_client->processResponse(response);
 
       } catch (const std::exception &e) {
         std::cerr << "Error: " << e.what() << std::endl;
