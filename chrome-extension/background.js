@@ -426,6 +426,8 @@ async function askLLM(systemPrompt, userPrompt, apiKey) {
         ],
         temperature: 0.0,
         max_tokens: 2000,
+        n: 1,
+        stop: null,
       }),
     });
 

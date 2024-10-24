@@ -170,6 +170,19 @@ async function handleSummarizeClick() {
             // document.getElementById("chatgptResult").textContent = result1.data;
             try {
               renderGptResult(JSON.parse(result1.data)) ;
+              
+              //highlight facts
+              chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+                if (tabs[0]) {
+                  chrome.tabs.sendMessage(tabs[0].id, {
+                    target: 'content-script',
+                    action: "highlight_facts",
+                    facts:JSON.parse(result1.data).facts
+                  });
+                }
+              });
+            
+
             }catch (error) {
               console.error("Error: chatgptResult:", error);
             }

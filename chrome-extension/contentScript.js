@@ -137,6 +137,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           // Highlight the word
           highlightWord(result.range);
         }
+  } else if (request.action === "highlight_facts") {
+  console.log("highlight_facts:", request.facts);
+    highlightText(request.facts);
   }
 });
 
@@ -734,4 +737,41 @@ function updatePopupContent(content) {
   const player = new YouTubeAutoPlayer();
 })();
 
+
+function highlightText(strings) {
+  const body = document.body;
+
+  // Loop over each string in the list
+  strings.forEach((str) => {
+      // Create a regular expression for the string, case-insensitive
+      const regex = new RegExp(str, 'gi');
+
+      // Use treeWalker to find text nodes in the DOM
+      const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, null, false);
+      let node;
+
+      // Iterate over all text nodes
+      while (node = walker.nextNode()) {
+          const parent = node.parentNode;
+
+          // If the node contains the string we're looking for
+          if (regex.test(node.nodeValue)) {
+              // Replace the string with a marked version
+              const highlighted = node.nodeValue.replace(regex, (match) => `<span style="background-color: lightblue; color: black;">${match}</span>`);
+
+              // Replace the original text with the new highlighted HTML
+              const tempDiv = document.createElement('div');
+              tempDiv.innerHTML = highlighted;
+
+              // Replace the original text node with the new HTML
+              while (tempDiv.firstChild) {
+                  parent.insertBefore(tempDiv.firstChild, node);
+              }
+
+              // Remove the original text node
+              parent.removeChild(node);
+          }
+      }
+  });
+}
 
