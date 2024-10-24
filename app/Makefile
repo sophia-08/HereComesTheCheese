@@ -1,7 +1,7 @@
 CXX = c++
 CC = cc
 CXXFLAGS = -std=c++17 -Wall -Wextra
-LDFLAGS = -framework IOKit -framework CoreFoundation -L lib -llc3 -lcpr
+LDFLAGS = -framework IOKit -framework CoreFoundation -framework Cocoa  -L lib -llc3 -lcpr
 
 OUTDIR = out
 
@@ -16,7 +16,7 @@ $(OUTDIR)/ergo_proxy: ergo_proxy.cpp
 $(OUTDIR)/wave.o: wave.c
 	$(CC) -c -o $@ $<
 
-$(OUTDIR)/ergo_app: ergo_app.cpp $(OUTDIR)/wave.o
+$(OUTDIR)/ergo_app: ergo_app.cpp $(OUTDIR)/wave.o type_by_paste.mm
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^
 
 clean:

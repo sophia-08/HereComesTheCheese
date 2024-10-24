@@ -20,7 +20,9 @@
 #include <nlohmann/json.hpp>
 
 #include "lc3_cpp.h"
+#include "type_by_paste.h"
 #include "wave.h"
+
 using json = nlohmann::json;
 class OpenAIClient;
 class ProxySocketServer;
@@ -80,6 +82,7 @@ public:
 
   std::string generateText(const std::string &prompt) {
     json messages = json::array();
+    std::cout << "generateText: " << prompt << std::endl;
 
     if (!system_role.empty()) {
       messages.push_back({{"role", "system"}, {"content", system_role}});
@@ -347,8 +350,18 @@ private:
 
 HIDDevice::HIDDevice(IOHIDDeviceRef device, ProxySocketServer *server)
     : m_device(device), m_server(server), m_connected(true) {
+  std::string system_message =
+      "You are a helpful AI assistant. Be concise and clear in your "
+      "responses.You will be given one short sentense, your response "
+      "will be mapped to a list of commands. The list are "
+      "['translate', 'definition', 'launch browser', 'summarize', "
+      "'unknown']. Your resposne must in JSON,  with only two "
+      "attributes, 'command' and 'parameter'. 'command' must in the "
+      "commnd list, if you do not know, use 'unknown'. 'parameter' is "
+      "optional, for example, for 'launch browser', parameter may be "
+      "the URL of a website";
   IOHIDDeviceOpen(m_device, kIOHIDOptionsTypeNone);
-  m_ai_client = std::make_unique<OpenAIClient>(this, "system_message");
+  m_ai_client = std::make_unique<OpenAIClient>(this, system_message);
   log("HIDDevice created");
 }
 HIDDevice::~HIDDevice() {
@@ -424,30 +437,43 @@ void HIDDevice::execute(const json &response) {
   }
 }
 
-std::unordered_set<std::string> shortCommands = {"translate", "translated", "definition", "summarize", "summarized"};
-std::string trim(const std::string& str) {
-    const std::string whitespace = " \t\n\r\f\v";
-    std::size_t first = str.find_first_not_of(whitespace);
-    if (first == std::string::npos) return "";
-    std::size_t last = str.find_last_not_of(whitespace);
-    return str.substr(first, last - first + 1);
+std::unordered_set<std::string> shortCommands = {
+    "translate",  "translated", "definition", "summarize",
+    "summarized", "type",       "input"};
+std::string trim(const std::string &str) {
+  const std::string whitespace = " \t\n\r\f\v";
+  std::size_t first = str.find_first_not_of(whitespace);
+  if (first == std::string::npos)
+    return "";
+  std::size_t last = str.find_last_not_of(whitespace);
+  return str.substr(first, last - first + 1);
 }
 
-std::string getFirstWordLower(const std::string& sentence) {
-   std::string trimmed = trim(sentence);
-   std::size_t spacePos = trimmed.find(' ');
-   std::string firstWord = (spacePos == std::string::npos) ? trimmed : trimmed.substr(0, spacePos);
-   std::transform(firstWord.begin(), firstWord.end(), firstWord.begin(), ::tolower);
-   
-   // Remove punctuation
-   firstWord.erase(
-       std::remove_if(firstWord.begin(), firstWord.end(), ::ispunct),
-       firstWord.end()
-   );
-   
-   return trim(firstWord);
-}
+std::pair<std::string, std::string>
+splitFirstWord(const std::string &sentence) {
+  std::string trimmed = trim(sentence);
+  std::size_t spacePos = trimmed.find(' ');
 
+  // If no space found, return the whole string as first word and empty string
+  // as remainder
+  if (spacePos == std::string::npos) {
+    return std::make_pair(trimmed, "");
+  }
+
+  // Split into first word and remainder
+  std::string firstWord = trimmed.substr(0, spacePos);
+  std::string remainder = trim(trimmed.substr(spacePos + 1));
+
+  // Transform first word to lowercase
+  std::transform(firstWord.begin(), firstWord.end(), firstWord.begin(),
+                 ::tolower);
+
+  // Remove punctuation from first word
+  firstWord.erase(std::remove_if(firstWord.begin(), firstWord.end(), ::ispunct),
+                  firstWord.end());
+
+  return std::make_pair(trim(firstWord), remainder);
+}
 #define BUF_SIZE 170
 void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
   std::stringstream ss;
@@ -455,7 +481,6 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
   int16_t pcm[BUF_SIZE];
   memset(pcm, 0, BUF_SIZE * 2);
 
-#if 1
   if (report[0] == 0x02) {
     // Cutsomer report
     bool end = true;
@@ -516,40 +541,43 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
         std::string transcription = whisper_client.transcribe(pcm_data);
         std::cout << "Transcription: " << transcription << std::endl;
 
-        auto cmd = getFirstWordLower(transcription);
-        std::cout << "cmd: " << cmd << "len=" << cmd.size() << std::endl;
-        if (shortCommands.count(cmd.c_str())>0)  {
-          std::string jsonReport =
-              JSON::makeObject({{"type", "hid_cmd"}, {"data", cmd}});
-          m_server->sendToClients(jsonReport);
-          log("Sent short command to clients: " + jsonReport);
-        }
+        auto cmd = splitFirstWord(transcription);
+        std::cout << "cmd: " << cmd.first << " len=" << cmd.first.size()
+                  << std::endl;
+        if (shortCommands.count(cmd.first.c_str()) > 0) {
+          if ((cmd.first.compare("type") == 0) ||
+              (cmd.first.compare("input") == 0)) {
+            std::cout << "Type: " << cmd.second << std::endl;
 
-#if 0
-        std::string system_message =
-            "You are a helpful AI assistant. Be concise and clear in your "
-            "responses.You will be given one short sentense, your response "
-            "will be mapped to a list of commands. The list are "
-            "['translate', 'definition', 'launch browser', 'summarize', "
-            "'unknown']. Your resposne must in JSON,  with only two "
-            "attributes, 'command' and 'parameter'. 'command' must in the "
-            "commnd list, if you do not know, use 'unknown'. 'parameter' is "
-            "optional, for example, for 'launch browser', parameter may be "
-            "the URL of a website";
+            copyTextToClipboard(cmd.second);
+            std::cout << "Simulating paste of: " << cmd.second << std::endl;
+            pasteText();
+          } else {
+            std::string jsonReport =
+                JSON::makeObject({{"type", "hid_cmd"}, {"data", cmd.first}});
+            m_server->sendToClients(jsonReport);
+            log("Sent short command to clients: " + jsonReport);
+          }
 
-        std::string response = m_ai_client->generateText(transcription);
-        m_ai_client->processResponse(response);
+        } else if (transcription.size() > 10) {
+
+#if 1
+
+          std::string response = m_ai_client->generateText(transcription);
+          m_ai_client->processResponse(response);
 #endif
-
+        } else {
+          std::cout << "Transcription: " << transcription << ", ignored"
+                    << std::endl;
+        }
       } catch (const std::exception &e) {
         std::cerr << "Error: " << e.what() << std::endl;
       }
+#endif
 
       pcm_data.clear();
-#endif
     }
-  }
-#endif
+  } // if (report[0] == 0x02)
 
 #if 0
     ss << std::hex << std::setfill('0');
