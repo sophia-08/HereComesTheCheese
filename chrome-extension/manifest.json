@@ -13,7 +13,7 @@
   "content_scripts": [
     {
       "matches": ["https://*/*"],
-      "js": ["contentScript.js", "Readability.js"]
+      "js": ["contentScript.js", "Readability.js", "grab_news.js"]
     }
   ],
   "web_accessible_resources": [

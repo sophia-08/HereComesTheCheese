@@ -105,41 +105,44 @@ function extractTextContent() {
   return document.body.innerText;
 }
 
- function processArticle() {
+function processArticle() {
   const documentClone = document.cloneNode(true);
   const article = new Readability(documentClone).parse();
 
-  return article ;
+  return article;
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   console.log("contentScript ", request);
   if (request.action === "getDOMContent") {
     // sendResponse({ content: extractTextContent() });
-    sendResponse({ content: processArticle()});
+    sendResponse({ content: processArticle() });
   } else if (request.action === "definition") {
-        // Remove previous highlight if it exists
-        removeHighlight();
+    // Remove previous highlight if it exists
+    removeHighlight();
 
-        console.log("Last xy: ", lastKnownMouseX, lastKnownMouseY);
-    
-        // Use the last known mouse position
-        const result = getWordAtPosition(lastKnownMouseX, lastKnownMouseY);
-    
-        if (result && result.word) {
-          lastWord = result.word;
-          // lastWord = word;
-          chrome.runtime.sendMessage({
-            type: "wordUnderCursor",
-            word: result.word,
-          });
-    
-          // Highlight the word
-          highlightWord(result.range);
-        }
+    console.log("Last xy: ", lastKnownMouseX, lastKnownMouseY);
+
+    // Use the last known mouse position
+    const result = getWordAtPosition(lastKnownMouseX, lastKnownMouseY);
+
+    if (result && result.word) {
+      lastWord = result.word;
+      // lastWord = word;
+      chrome.runtime.sendMessage({
+        type: "wordUnderCursor",
+        word: result.word,
+      });
+
+      // Highlight the word
+      highlightWord(result.range);
+    }
   } else if (request.action === "highlight_facts") {
-  console.log("highlight_facts:", request.facts);
+    console.log("highlight_facts:", request.facts);
     highlightText(request.facts);
+  } else if (request.action === "grab_title") {
+    console.log("grab_title:");
+    grabHeadlines();
   }
 });
 
@@ -421,7 +424,7 @@ function updatePopupContent(content) {
   }
 }
 
-(function() {
+(function () {
   class YouTubeAutoPlayer {
     constructor() {
       this.DEBUG = true;
@@ -470,7 +473,7 @@ function updatePopupContent(content) {
       if (!this.DEBUG) return;
       const timestamp = new Date().toISOString();
       const logStyle = 'background: #f0f0f0; color: #333; padding: 2px 5px; border-radius: 3px;';
-      
+
       if (data) {
         console.log(`%c[YouTube Autoplay ${timestamp}] ${message}`, logStyle, data);
       } else {
@@ -480,33 +483,33 @@ function updatePopupContent(content) {
 
     getCurrentPlatform() {
       const currentDomain = window.location.hostname;
-      
+
       if (!this.SUPPORTED_DOMAINS.some(domain => currentDomain.includes(domain))) {
         return this.PLATFORM.UNSUPPORTED;
       }
 
-      return currentDomain === 'music.youtube.com' ? 
-        this.PLATFORM.YOUTUBE_MUSIC : 
+      return currentDomain === 'music.youtube.com' ?
+        this.PLATFORM.YOUTUBE_MUSIC :
         this.PLATFORM.YOUTUBE;
     }
 
     isSearchPage() {
       const platform = this.getCurrentPlatform();
-      
+
       if (platform === this.PLATFORM.UNSUPPORTED) return false;
 
-      const isSearch = platform === this.PLATFORM.YOUTUBE 
+      const isSearch = platform === this.PLATFORM.YOUTUBE
         ? window.location.pathname === '/results' && window.location.search.includes('search_query')
-        : (window.location.pathname.includes('/search') || 
-           window.location.search.includes('q=') || 
-           window.location.pathname.includes('/channel'));
-      
+        : (window.location.pathname.includes('/search') ||
+          window.location.search.includes('q=') ||
+          window.location.pathname.includes('/channel'));
+
       this.debugLog(`Checking if search/channel page: ${isSearch}`, {
         platform,
         pathname: window.location.pathname,
         search: window.location.search
       });
-      
+
       return isSearch;
     }
 
@@ -530,7 +533,7 @@ function updatePopupContent(content) {
         const videoResults = document.querySelectorAll(selectors.videoResults);
         const playlistResults = document.querySelectorAll(selectors.playlistResults);
         const channelSongs = document.querySelectorAll(selectors.channelSongResults);
-        
+
         return {
           songs: {
             count: songResults.length,
@@ -554,7 +557,7 @@ function updatePopupContent(content) {
 
     handleYouTubePlay(checkForResults) {
       const videoLinks = document.querySelectorAll(this.SELECTORS[this.PLATFORM.YOUTUBE].searchResults);
-      
+
       for (let link of videoLinks) {
         if (this.SELECTORS[this.PLATFORM.YOUTUBE].isValidResult(link)) {
           this.debugLog('Found valid YouTube video link:', link.href);
@@ -567,11 +570,11 @@ function updatePopupContent(content) {
 
     handleYouTubeMusicPlay(checkForResults) {
       const selectors = this.SELECTORS[this.PLATFORM.YOUTUBE_MUSIC];
-      
+
       // Handle channel page
       if (window.location.pathname.includes('/channel')) {
         this.debugLog('Handling YouTube Music channel page');
-        
+
         // Try shuffle button first
         const shuffleButton = document.querySelector(selectors.channelShuffleButton);
         if (shuffleButton) {
@@ -623,13 +626,13 @@ function updatePopupContent(content) {
       const songResults = document.querySelectorAll(selectors.songResults);
       const videoResults = document.querySelectorAll(selectors.videoResults);
       const playlistResults = document.querySelectorAll(selectors.playlistResults);
-      
+
       const resultsInfo = this.getResultsInfo();
       this.debugLog('Current YouTube Music results found:', resultsInfo);
-      
+
       let firstResult = null;
       let resultType = '';
-      
+
       if (songResults.length > 0) {
         firstResult = songResults[0];
         resultType = 'song';
@@ -640,11 +643,11 @@ function updatePopupContent(content) {
         firstResult = playlistResults[0];
         resultType = 'playlist';
       }
-      
+
       if (firstResult) {
         clearInterval(checkForResults);
         this.debugLog(`Found first YouTube Music result of type: ${resultType}`);
-        
+
         const playButton = firstResult.querySelector(selectors.playButton);
         if (playButton) {
           this.debugLog('Found play button, attempting to click');
@@ -675,12 +678,12 @@ function updatePopupContent(content) {
       if (platform === this.PLATFORM.UNSUPPORTED) return;
 
       this.debugLog(`Starting playFirstResult function for platform: ${platform}`);
-      
+
       let attemptCount = 0;
       const checkForResults = setInterval(() => {
         attemptCount++;
         this.debugLog(`Attempt ${attemptCount} to find results`);
-        
+
         if (platform === this.PLATFORM.YOUTUBE) {
           this.handleYouTubePlay(checkForResults);
         } else {
@@ -743,35 +746,52 @@ function highlightText(strings) {
 
   // Loop over each string in the list
   strings.forEach((str) => {
-      // Create a regular expression for the string, case-insensitive
-      const regex = new RegExp(str, 'gi');
+    // Create a regular expression for the string, case-insensitive
+    const regex = new RegExp(str, 'gi');
 
-      // Use treeWalker to find text nodes in the DOM
-      const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, null, false);
-      let node;
+    // Use treeWalker to find text nodes in the DOM
+    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, null, false);
+    let node;
 
-      // Iterate over all text nodes
-      while (node = walker.nextNode()) {
-          const parent = node.parentNode;
+    // Iterate over all text nodes
+    while (node = walker.nextNode()) {
+      const parent = node.parentNode;
 
-          // If the node contains the string we're looking for
-          if (regex.test(node.nodeValue)) {
-              // Replace the string with a marked version
-              const highlighted = node.nodeValue.replace(regex, (match) => `<span style="background-color: lightblue; color: black;">${match}</span>`);
+      // If the node contains the string we're looking for
+      if (regex.test(node.nodeValue)) {
+        // Replace the string with a marked version
+        const highlighted = node.nodeValue.replace(regex, (match) => `<span style="background-color: lightblue; color: black;">${match}</span>`);
 
-              // Replace the original text with the new highlighted HTML
-              const tempDiv = document.createElement('div');
-              tempDiv.innerHTML = highlighted;
+        // Replace the original text with the new highlighted HTML
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = highlighted;
 
-              // Replace the original text node with the new HTML
-              while (tempDiv.firstChild) {
-                  parent.insertBefore(tempDiv.firstChild, node);
-              }
+        // Replace the original text node with the new HTML
+        while (tempDiv.firstChild) {
+          parent.insertBefore(tempDiv.firstChild, node);
+        }
 
-              // Remove the original text node
-              parent.removeChild(node);
-          }
+        // Remove the original text node
+        parent.removeChild(node);
       }
+    }
   });
 }
+
+// document.addEventListener('DOMContentLoaded', function () {
+//   console.log("DOMContentLoaded");
+//   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+//     const currentTab = tabs[0];
+
+//     if (currentTab.url.includes('yahoo.com')) {
+//       chrome.scripting.executeScript({
+//         target: { tabId: currentTab.id },
+//         function: grabHeadlines
+//       }, displayResults);
+//     } else {
+//       document.getElementById('headlines').innerHTML = 'This is not a supported news website.';
+//     }
+//   });
+// });
+
 

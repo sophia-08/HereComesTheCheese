@@ -396,6 +396,13 @@ function handleHidCmd(cmd) {
       target: 'side-panel',
       action: cmd,
     });
+  } else if (cmd == "click") {
+    // send cmd to sidepanel  
+    chrome.runtime.sendMessage({
+      type: "hid_cmd",
+      target: 'side-panel',
+      action: cmd,
+    });
   }
 
 }
