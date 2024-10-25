@@ -430,6 +430,11 @@ void HIDDevice::execute(const json &response) {
           JSON::makeObject({{"type", "hid_cmd"}, {"data", "summarize"}});
       m_server->sendToClients(jsonReport);
       log("Input report received and sent to clients: " + jsonReport);
+    } else if (command == "click") {
+      std::string jsonReport =
+          JSON::makeObject({{"type", "hid_cmd"}, {"data", "click"}, {"parameter", response["parameter"]}});
+      m_server->sendToClients(jsonReport);
+      log("Input report received and sent to clients: " + jsonReport);
     } else if (command == "unknown") {
     }
   } catch (const json::exception &e) {
@@ -506,19 +511,24 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
       // std::cout << std::endl  << std::dec;
     } else {
 
-#if 0
+#if 1
       // OpenAIClient ai_client(this, "system_message");
       // std::string ss = "{\"command\":\"launch "
       //                  "browser\",\"parameter\":\"https://www.youtube.com/"
       //                  "results?search_query=purple+rain\"}";
 
-      // std::string ss = "{\"command\":\"definition\",\"parameter\":\"https://www.youtube.com/"
+      // std::string ss =
+      // "{\"command\":\"definition\",\"parameter\":\"https://www.youtube.com/"
       //            "results?search_query=purple+rain\"}";
 
-      std::string ss = "{\"command\":\"summarize\",\"parameter\":\"https://www.youtube.com/"
-                  "results?search_query=purple+rain\"}";
+      // std::string ss =
+      // "{\"command\":\"summarize\",\"parameter\":\"https://www.youtube.com/"
+      //             "results?search_query=purple+rain\"}";
+
+      std::string ss = "{\"command\":\"click\",\"parameter\":\"Musk\"}";
+
       // json response_json = json::parse(ss);
-      m_ai_client-> processResponse(ss);
+      m_ai_client->processResponse(ss);
       return;
 
 #else
