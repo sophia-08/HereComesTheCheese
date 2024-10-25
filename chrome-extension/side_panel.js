@@ -142,7 +142,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (cmd == 'summarize') {
       handleSummarizeClick();
     } else if (cmd == 'click') {
-      
+    let clickTerms = message.parameter;  
     chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       const currentTab = tabs[0];
       console.log('Current tab:', currentTab);
@@ -164,7 +164,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         }, (results) => {
             if (results && results[0] && results[0].result) {
                 const headlines = results[0].result;
-                openArticle(headlines, "chinese hackers");
+                console.log("clickTerms: ", clickTerms);
+                openArticle(headlines, clickTerms);
             }
         });
     });

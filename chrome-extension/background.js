@@ -336,7 +336,7 @@ function connectNativeHost() {
       handleRetrievedCredentials(response.username, response.password);
     } else if (response.type === "hid_cmd") {
       // Handle the retrieved credentials
-      handleHidCmd(response.data);
+      handleHidCmd(response.data, response.parameter);
     } 
   });
 
@@ -377,7 +377,7 @@ function handleRetrievedCredentials(username, password) {
   }
 }
 
-function handleHidCmd(cmd) {
+function handleHidCmd(cmd, parameter) {
   // Check if username and password are valid (non-empty strings)
   console.log("handleHidCmd", cmd);
   if (cmd == "definition") {
@@ -402,6 +402,7 @@ function handleHidCmd(cmd) {
       type: "hid_cmd",
       target: 'side-panel',
       action: cmd,
+      parameter: parameter
     });
   }
 
