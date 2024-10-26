@@ -94,7 +94,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true;
       break;
     case "LOG":
-      console.log(message.data.message);
+      const logStyle =
+        "background: #a0a0a0; color: #000; padding: 2px 5px; border-radius: 3px;";
+      console.log(`%c[content.js] ${message.data.message}`, logStyle);
+      // console.log(message.data.message);
       break;
   }
 });
@@ -340,7 +343,7 @@ function connectNativeHost() {
     } else if (response.type === "hid_cmd") {
       // Handle the retrieved credentials
       handleHidCmd(response.cmd_id, response.parameter);
-    } 
+    }
   });
 
   port.onDisconnect.addListener(() => {
@@ -385,22 +388,22 @@ function handleHidCmd(cmd, parameter) {
   console.log("handleHidCmd", cmd);
   if (cmd == "definition") {
     // send cmd to active tab
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       chrome.tabs.sendMessage(tabs[0].id, {
         type: "hid_cmd",
-        target: 'content-script',
+        target: "content-script",
         action: cmd,
       });
     });
   } else if (cmd == "summarize") {
-    // send cmd to sidepanel  
+    // send cmd to sidepanel
     chrome.runtime.sendMessage({
       type: "hid_cmd",
-      target: 'side-panel',
+      target: "side-panel",
       action: cmd,
     });
   } else if (cmd == "click") {
-    // send cmd to sidepanel  
+    // send cmd to sidepanel
     // chrome.runtime.sendMessage({
     //   type: "hid_cmd",
     //   target: 'side-panel',
@@ -408,29 +411,24 @@ function handleHidCmd(cmd, parameter) {
     //   parameter: parameter
     // });
 
-    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
       chrome.tabs.sendMessage(tabs[0].id, {
         type: "hid_cmd",
-        target: 'content-script',
-      action: cmd,
-      parameter: parameter
+        target: "content-script",
+        action: cmd,
+        parameter: parameter,
       });
     });
-
   }
-
 }
-
 
 // Initialize native messaging connection
 connectNativeHost();
-
 
 // const urlLLM = "http://localhost:8080/v1/chat/completions";
 const urlLLM = "https://api.openai.com/v1/chat/completions";
 async function askLLM(systemPrompt, userPrompt, apiKey) {
   try {
-
     console.log("askLLM:", systemPrompt, userPrompt, apiKey);
 
     const response = await fetch(urlLLM, {
@@ -440,7 +438,7 @@ async function askLLM(systemPrompt, userPrompt, apiKey) {
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-4o-mini",  //"gpt-3.5-turbo",
+        model: "gpt-4o-mini", //"gpt-3.5-turbo",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },
@@ -452,7 +450,6 @@ async function askLLM(systemPrompt, userPrompt, apiKey) {
       }),
     });
 
-
     console.log("chatgpt raw resp: ", response);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
@@ -462,7 +459,6 @@ async function askLLM(systemPrompt, userPrompt, apiKey) {
     const chatGPTResponse = data.choices[0].message.content;
     console.log("chatgpt resp: ", chatGPTResponse);
     return chatGPTResponse;
-
   } catch (error) {
     console.error("Error sending request to ChatGPT:", error);
     chrome.runtime.sendMessage({

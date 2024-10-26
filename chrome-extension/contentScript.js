@@ -103,15 +103,15 @@
 
 const customLog = (...args) => {
   // Convert any non-string arguments to strings for serialization
-  const serializedArgs = args.map(arg => {
-      if (typeof arg === 'object') {
-          try {
-              return JSON.stringify(arg);
-          } catch (e) {
-              return String(arg);
-          }
+  const serializedArgs = args.map((arg) => {
+    if (typeof arg === "object") {
+      try {
+        return JSON.stringify(arg);
+      } catch (e) {
+        return String(arg);
       }
-      return String(arg);
+    }
+    return String(arg);
   });
 
   // Create a timestamp
@@ -119,21 +119,23 @@ const customLog = (...args) => {
 
   // Create the log message
   const logMessage = {
-      // timestamp,
-      type: 'log',
-      source: 'content.js',
-      message: serializedArgs.join(' '),
-      // stack: new Error().stack
+    // timestamp,
+    type: "log",
+    source: "content.js",
+    message: serializedArgs.join(" "),
+    // stack: new Error().stack
   };
 
   // Send message to background script
-  chrome.runtime.sendMessage({
-      type: 'LOG',
-      data: logMessage
-  }).catch(error => {
+  chrome.runtime
+    .sendMessage({
+      type: "LOG",
+      data: logMessage,
+    })
+    .catch((error) => {
       // Fallback to console.log if messaging fails
-      console.log('[CustomLog Failed]', ...args, error);
-  });
+      console.log("[CustomLog Failed]", ...args, error);
+    });
 };
 
 console.log = customLog;
@@ -181,13 +183,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     console.log("grab_title:");
     grabHeadlines();
   } else if (request.action === "click") {
-    console.log("click:" , request.parameter);
+    console.log("click:", request.parameter);
     let headLines = grabHeadlines();
-    console.log("headlines:" , headLines);
-    if (headLines ){
+    console.log("headlines:", headLines);
+    if (headLines) {
       console.log("click the headline with: ", request.parameter);
       openArticle(headLines, request.parameter);
-  }
+    }
   }
 });
 
@@ -473,69 +475,84 @@ function updatePopupContent(content) {
   class YouTubeAutoPlayer {
     constructor() {
       this.DEBUG = true;
-      this.SUPPORTED_DOMAINS = ['youtube.com', 'music.youtube.com'];
+      this.SUPPORTED_DOMAINS = ["youtube.com", "music.youtube.com"];
       this.PLATFORM = {
-        YOUTUBE: 'youtube',
-        YOUTUBE_MUSIC: 'youtube_music',
-        UNSUPPORTED: 'unsupported'
+        YOUTUBE: "youtube",
+        YOUTUBE_MUSIC: "youtube_music",
+        UNSUPPORTED: "unsupported",
       };
 
       this.SELECTORS = {
         [this.PLATFORM.YOUTUBE]: {
-          searchResults: 'a#video-title',
-          isValidResult: (link) => link.href.includes('/watch?v=')
+          searchResults: "a#video-title",
+          isValidResult: (link) => link.href.includes("/watch?v="),
         },
         [this.PLATFORM.YOUTUBE_MUSIC]: {
-          songResults: 'ytmusic-responsive-list-item-renderer',
-          videoResults: 'ytmusic-video-renderer',
-          playlistResults: 'ytmusic-playlist-renderer',
-          channelSongResults: '#contents ytmusic-responsive-list-item-renderer',
-          channelShuffleButton: 'ytmusic-play-button-renderer[data-tooltip="Shuffle"]',
-          channelPlayButton: 'ytmusic-play-button-renderer[data-tooltip="Play"]',
-          playButton: 'ytmusic-play-button-renderer',
-          titleLink: 'a.yt-simple-endpoint'
-        }
+          songResults: "ytmusic-responsive-list-item-renderer",
+          videoResults: "ytmusic-video-renderer",
+          playlistResults: "ytmusic-playlist-renderer",
+          channelSongResults: "#contents ytmusic-responsive-list-item-renderer",
+          channelShuffleButton:
+            'ytmusic-play-button-renderer[data-tooltip="Shuffle"]',
+          channelPlayButton:
+            'ytmusic-play-button-renderer[data-tooltip="Play"]',
+          playButton: "ytmusic-play-button-renderer",
+          titleLink: "a.yt-simple-endpoint",
+        },
       };
 
       const platform = this.getCurrentPlatform();
       if (platform !== this.PLATFORM.UNSUPPORTED) {
-        this.debugLog('Supported platform detected:', platform);
+        this.debugLog("Supported platform detected:", platform);
         this.initWhenReady();
       } else {
-        this.debugLog('Unsupported domain, extension inactive');
+        this.debugLog("Unsupported domain, extension inactive");
       }
     }
 
     initWhenReady() {
-      if (document.readyState === 'interactive' || document.readyState === 'complete') {
+      if (
+        document.readyState === "interactive" ||
+        document.readyState === "complete"
+      ) {
         this.init();
       } else {
-        document.addEventListener('DOMContentLoaded', () => this.init(), { once: true });
+        document.addEventListener("DOMContentLoaded", () => this.init(), {
+          once: true,
+        });
       }
     }
 
     debugLog(message, data = null) {
       if (!this.DEBUG) return;
-      const timestamp = new Date().toISOString();
-      const logStyle = 'background: #f0f0f0; color: #333; padding: 2px 5px; border-radius: 3px;';
+      // const timestamp = new Date().toISOString();
+      // const logStyle = 'background: #f0f0f0; color: #333; padding: 2px 5px; border-radius: 3px;';
+
+      // if (data) {
+      //   console.log(`%c[YouTube Autoplay ${timestamp}] ${message}`, logStyle, data);
+      // } else {
+      //   console.log(`%c[YouTube Autoplay ${timestamp}] ${message}`, logStyle);
+      // }
 
       if (data) {
-        console.log(`%c[YouTube Autoplay ${timestamp}] ${message}`, logStyle, data);
+        console.log("youtube plugin: ", message, data);
       } else {
-        console.log(`%c[YouTube Autoplay ${timestamp}] ${message}`, logStyle);
+        console.log("youtube plugin: ", message);
       }
     }
 
     getCurrentPlatform() {
       const currentDomain = window.location.hostname;
 
-      if (!this.SUPPORTED_DOMAINS.some(domain => currentDomain.includes(domain))) {
+      if (
+        !this.SUPPORTED_DOMAINS.some((domain) => currentDomain.includes(domain))
+      ) {
         return this.PLATFORM.UNSUPPORTED;
       }
 
-      return currentDomain === 'music.youtube.com' ?
-        this.PLATFORM.YOUTUBE_MUSIC :
-        this.PLATFORM.YOUTUBE;
+      return currentDomain === "music.youtube.com"
+        ? this.PLATFORM.YOUTUBE_MUSIC
+        : this.PLATFORM.YOUTUBE;
     }
 
     isSearchPage() {
@@ -543,16 +560,18 @@ function updatePopupContent(content) {
 
       if (platform === this.PLATFORM.UNSUPPORTED) return false;
 
-      const isSearch = platform === this.PLATFORM.YOUTUBE
-        ? window.location.pathname === '/results' && window.location.search.includes('search_query')
-        : (window.location.pathname.includes('/search') ||
-          window.location.search.includes('q=') ||
-          window.location.pathname.includes('/channel'));
+      const isSearch =
+        platform === this.PLATFORM.YOUTUBE
+          ? window.location.pathname === "/results" &&
+            window.location.search.includes("search_query")
+          : window.location.pathname.includes("/search") ||
+            window.location.search.includes("q=") ||
+            window.location.pathname.includes("/channel");
 
       this.debugLog(`Checking if search/channel page: ${isSearch}`, {
         platform,
         pathname: window.location.pathname,
-        search: window.location.search
+        search: window.location.search,
       });
 
       return isSearch;
@@ -565,48 +584,64 @@ function updatePopupContent(content) {
       this.debugLog(`Getting results info for platform: ${platform}`);
 
       if (platform === this.PLATFORM.YOUTUBE) {
-        const videoLinks = document.querySelectorAll(this.SELECTORS[platform].searchResults);
+        const videoLinks = document.querySelectorAll(
+          this.SELECTORS[platform].searchResults
+        );
         return {
           videos: {
             count: videoLinks.length,
-            firstTitle: videoLinks[0]?.textContent || 'N/A'
-          }
+            firstTitle: videoLinks[0]?.textContent || "N/A",
+          },
         };
       } else {
         const selectors = this.SELECTORS[platform];
         const songResults = document.querySelectorAll(selectors.songResults);
         const videoResults = document.querySelectorAll(selectors.videoResults);
-        const playlistResults = document.querySelectorAll(selectors.playlistResults);
-        const channelSongs = document.querySelectorAll(selectors.channelSongResults);
+        const playlistResults = document.querySelectorAll(
+          selectors.playlistResults
+        );
+        const channelSongs = document.querySelectorAll(
+          selectors.channelSongResults
+        );
 
         return {
           songs: {
             count: songResults.length,
-            firstTitle: songResults[0]?.querySelector(selectors.titleLink)?.textContent || 'N/A'
+            firstTitle:
+              songResults[0]?.querySelector(selectors.titleLink)?.textContent ||
+              "N/A",
           },
           videos: {
             count: videoResults.length,
-            firstTitle: videoResults[0]?.querySelector(selectors.titleLink)?.textContent || 'N/A'
+            firstTitle:
+              videoResults[0]?.querySelector(selectors.titleLink)
+                ?.textContent || "N/A",
           },
           playlists: {
             count: playlistResults.length,
-            firstTitle: playlistResults[0]?.querySelector(selectors.titleLink)?.textContent || 'N/A'
+            firstTitle:
+              playlistResults[0]?.querySelector(selectors.titleLink)
+                ?.textContent || "N/A",
           },
           channelSongs: {
             count: channelSongs.length,
-            firstTitle: channelSongs[0]?.querySelector(selectors.titleLink)?.textContent || 'N/A'
-          }
+            firstTitle:
+              channelSongs[0]?.querySelector(selectors.titleLink)
+                ?.textContent || "N/A",
+          },
         };
       }
     }
 
     handleYouTubePlay(checkForResults) {
-      const videoLinks = document.querySelectorAll(this.SELECTORS[this.PLATFORM.YOUTUBE].searchResults);
+      const videoLinks = document.querySelectorAll(
+        this.SELECTORS[this.PLATFORM.YOUTUBE].searchResults
+      );
 
       for (let link of videoLinks) {
         if (this.SELECTORS[this.PLATFORM.YOUTUBE].isValidResult(link)) {
-          this.debugLog('Found valid YouTube video link:', link.href);
-          window.location.href = link.href + '&autoplay=1';
+          this.debugLog("Found valid YouTube video link:", link.href);
+          window.location.href = link.href + "&autoplay=1";
           clearInterval(checkForResults);
           break;
         }
@@ -617,51 +652,55 @@ function updatePopupContent(content) {
       const selectors = this.SELECTORS[this.PLATFORM.YOUTUBE_MUSIC];
 
       // Handle channel page
-      if (window.location.pathname.includes('/channel')) {
-        this.debugLog('Handling YouTube Music channel page');
+      if (window.location.pathname.includes("/channel")) {
+        this.debugLog("Handling YouTube Music channel page");
 
         // Try shuffle button first
-        const shuffleButton = document.querySelector(selectors.channelShuffleButton);
+        const shuffleButton = document.querySelector(
+          selectors.channelShuffleButton
+        );
         if (shuffleButton) {
-          this.debugLog('Found shuffle button, attempting to click');
+          this.debugLog("Found shuffle button, attempting to click");
           try {
             shuffleButton.click();
             clearInterval(checkForResults);
-            this.debugLog('Successfully clicked shuffle button');
+            this.debugLog("Successfully clicked shuffle button");
             return;
           } catch (error) {
-            this.debugLog('Error clicking shuffle button:', error);
+            this.debugLog("Error clicking shuffle button:", error);
           }
         }
 
         // Try play button if shuffle isn't available
         const playButton = document.querySelector(selectors.channelPlayButton);
         if (playButton) {
-          this.debugLog('Found play button, attempting to click');
+          this.debugLog("Found play button, attempting to click");
           try {
             playButton.click();
             clearInterval(checkForResults);
-            this.debugLog('Successfully clicked play button');
+            this.debugLog("Successfully clicked play button");
             return;
           } catch (error) {
-            this.debugLog('Error clicking play button:', error);
+            this.debugLog("Error clicking play button:", error);
           }
         }
 
         // Fall back to first song if buttons aren't available
-        const channelSongs = document.querySelectorAll(selectors.channelSongResults);
+        const channelSongs = document.querySelectorAll(
+          selectors.channelSongResults
+        );
         if (channelSongs.length > 0) {
           const firstSong = channelSongs[0];
           const songPlayButton = firstSong.querySelector(selectors.playButton);
           if (songPlayButton) {
-            this.debugLog('Found first song play button, attempting to click');
+            this.debugLog("Found first song play button, attempting to click");
             try {
               songPlayButton.click();
               clearInterval(checkForResults);
-              this.debugLog('Successfully clicked first song play button');
+              this.debugLog("Successfully clicked first song play button");
               return;
             } catch (error) {
-              this.debugLog('Error clicking first song play button:', error);
+              this.debugLog("Error clicking first song play button:", error);
             }
           }
         }
@@ -670,48 +709,52 @@ function updatePopupContent(content) {
       // Handle search results
       const songResults = document.querySelectorAll(selectors.songResults);
       const videoResults = document.querySelectorAll(selectors.videoResults);
-      const playlistResults = document.querySelectorAll(selectors.playlistResults);
+      const playlistResults = document.querySelectorAll(
+        selectors.playlistResults
+      );
 
       const resultsInfo = this.getResultsInfo();
-      this.debugLog('Current YouTube Music results found:', resultsInfo);
+      this.debugLog("Current YouTube Music results found:", resultsInfo);
 
       let firstResult = null;
-      let resultType = '';
+      let resultType = "";
 
       if (songResults.length > 0) {
         firstResult = songResults[0];
-        resultType = 'song';
+        resultType = "song";
       } else if (videoResults.length > 0) {
         firstResult = videoResults[0];
-        resultType = 'video';
+        resultType = "video";
       } else if (playlistResults.length > 0) {
         firstResult = playlistResults[0];
-        resultType = 'playlist';
+        resultType = "playlist";
       }
 
       if (firstResult) {
         clearInterval(checkForResults);
-        this.debugLog(`Found first YouTube Music result of type: ${resultType}`);
+        this.debugLog(
+          `Found first YouTube Music result of type: ${resultType}`
+        );
 
         const playButton = firstResult.querySelector(selectors.playButton);
         if (playButton) {
-          this.debugLog('Found play button, attempting to click');
+          this.debugLog("Found play button, attempting to click");
           try {
             playButton.click();
-            this.debugLog('Successfully clicked play button');
+            this.debugLog("Successfully clicked play button");
           } catch (error) {
-            this.debugLog('Error clicking play button:', error);
+            this.debugLog("Error clicking play button:", error);
           }
         } else {
-          this.debugLog('No play button found, trying title element');
+          this.debugLog("No play button found, trying title element");
           const titleElement = firstResult.querySelector(selectors.titleLink);
           if (titleElement) {
-            this.debugLog('Found title element, attempting to click');
+            this.debugLog("Found title element, attempting to click");
             try {
               titleElement.click();
-              this.debugLog('Successfully clicked title element');
+              this.debugLog("Successfully clicked title element");
             } catch (error) {
-              this.debugLog('Error clicking title element:', error);
+              this.debugLog("Error clicking title element:", error);
             }
           }
         }
@@ -722,7 +765,9 @@ function updatePopupContent(content) {
       const platform = this.getCurrentPlatform();
       if (platform === this.PLATFORM.UNSUPPORTED) return;
 
-      this.debugLog(`Starting playFirstResult function for platform: ${platform}`);
+      this.debugLog(
+        `Starting playFirstResult function for platform: ${platform}`
+      );
 
       let attemptCount = 0;
       const checkForResults = setInterval(() => {
@@ -744,37 +789,37 @@ function updatePopupContent(content) {
     }
 
     init() {
-      this.debugLog('Initializing YouTube Autoplay extension');
+      this.debugLog("Initializing YouTube Autoplay extension");
       this.debugLog(`Current platform: ${this.getCurrentPlatform()}`);
 
       // Handle initial page load
       if (this.isSearchPage()) {
-        this.debugLog('Initial page is a search page, scheduling autoplay');
+        this.debugLog("Initial page is a search page, scheduling autoplay");
         setTimeout(() => this.playFirstResult(), 1500);
       }
 
       // Handle navigation within the SPA
       let lastUrl = location.href;
-      this.debugLog('Starting URL observer');
+      this.debugLog("Starting URL observer");
       new MutationObserver(() => {
         const url = location.href;
         if (url !== lastUrl) {
-          this.debugLog('URL changed', {
+          this.debugLog("URL changed", {
             from: lastUrl,
-            to: url
+            to: url,
           });
           lastUrl = url;
           if (this.isSearchPage()) {
-            this.debugLog('New URL is a search page, scheduling autoplay');
+            this.debugLog("New URL is a search page, scheduling autoplay");
             setTimeout(() => this.playFirstResult(), 1500);
           }
         }
       }).observe(document, { subtree: true, childList: true });
 
       // Add keyboard shortcut
-      document.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'p') {
-          this.debugLog('Manual trigger shortcut (Ctrl+P) detected');
+      document.addEventListener("keydown", (e) => {
+        if (e.ctrlKey && e.key === "p") {
+          this.debugLog("Manual trigger shortcut (Ctrl+P) detected");
           this.playFirstResult();
         }
       });
@@ -785,30 +830,38 @@ function updatePopupContent(content) {
   const player = new YouTubeAutoPlayer();
 })();
 
-
 function highlightText(strings) {
   const body = document.body;
 
   // Loop over each string in the list
   strings.forEach((str) => {
     // Create a regular expression for the string, case-insensitive
-    const regex = new RegExp(str, 'gi');
+    const regex = new RegExp(str, "gi");
 
     // Use treeWalker to find text nodes in the DOM
-    const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT, null, false);
+    const walker = document.createTreeWalker(
+      body,
+      NodeFilter.SHOW_TEXT,
+      null,
+      false
+    );
     let node;
 
     // Iterate over all text nodes
-    while (node = walker.nextNode()) {
+    while ((node = walker.nextNode())) {
       const parent = node.parentNode;
 
       // If the node contains the string we're looking for
       if (regex.test(node.nodeValue)) {
         // Replace the string with a marked version
-        const highlighted = node.nodeValue.replace(regex, (match) => `<span style="background-color: lightblue; color: black;">${match}</span>`);
+        const highlighted = node.nodeValue.replace(
+          regex,
+          (match) =>
+            `<span style="background-color: lightblue; color: black;">${match}</span>`
+        );
 
         // Replace the original text with the new highlighted HTML
-        const tempDiv = document.createElement('div');
+        const tempDiv = document.createElement("div");
         tempDiv.innerHTML = highlighted;
 
         // Replace the original text node with the new HTML
@@ -838,5 +891,3 @@ function highlightText(strings) {
 //     }
 //   });
 // });
-
-
