@@ -398,12 +398,22 @@ function handleHidCmd(cmd, parameter) {
     });
   } else if (cmd == "click") {
     // send cmd to sidepanel  
-    chrome.runtime.sendMessage({
-      type: "hid_cmd",
-      target: 'side-panel',
+    // chrome.runtime.sendMessage({
+    //   type: "hid_cmd",
+    //   target: 'side-panel',
+    //   action: cmd,
+    //   parameter: parameter
+    // });
+
+    chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+      chrome.tabs.sendMessage(tabs[0].id, {
+        type: "hid_cmd",
+        target: 'content-script',
       action: cmd,
       parameter: parameter
+      });
     });
+
   }
 
 }
