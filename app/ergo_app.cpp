@@ -18,6 +18,7 @@
 // Added for logging
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <regex>
 
 #include "lc3_cpp.h"
 #include "type_by_paste.h"
@@ -164,23 +165,6 @@ public:
 
 private:
   std::string baseUrl;
-};
-
-// Simple JSON class
-class JSON {
-public:
-  static std::string
-  makeObject(const std::vector<std::pair<std::string, std::string>> &pairs) {
-    std::stringstream ss;
-    ss << "{";
-    for (size_t i = 0; i < pairs.size(); ++i) {
-      if (i > 0)
-        ss << ",";
-      ss << "\"" << pairs[i].first << "\":\"" << pairs[i].second << "\"";
-    }
-    ss << "}";
-    return ss.str();
-  }
 };
 
 // Updated logging class
@@ -421,18 +405,26 @@ void HIDDevice::execute(const json &response) {
     } else if (command == "translate") {
 
     } else if (command == "definition") {
-      std::string jsonReport =
-          JSON::makeObject({{"type", "hid_cmd"}, {"data", "definition"}});
+      json j = {{"type", "hid_cmd"}, {"data", "definition"}};
+      std::string jsonReport = j.dump();
       m_server->sendToClients(jsonReport);
       log("Input report received and sent to clients: " + jsonReport);
     } else if (command == "summarize") {
-      std::string jsonReport =
-          JSON::makeObject({{"type", "hid_cmd"}, {"data", "summarize"}});
+      json j = {{"type", "hid_cmd"}, {"data", "summarize"}};
+      std::string jsonReport = j.dump();
       m_server->sendToClients(jsonReport);
       log("Input report received and sent to clients: " + jsonReport);
     } else if (command == "click") {
-      std::string jsonReport =
-          JSON::makeObject({{"type", "hid_cmd"}, {"data", "click"}, {"parameter", response["parameter"]}});
+      std::string param = response["parameter"].get<std::string>();
+
+      // Keep only alphanumeric and space, replace everything else with space
+      param = std::regex_replace(param, std::regex("[^a-zA-Z0-9\\s]+"), " ");
+      // Replace all whitespace (including newlines) with single space
+      param = std::regex_replace(param, std::regex("\\s+"), " ");
+      // Trim spaces at beginning and end
+      param = std::regex_replace(param, std::regex("^\\s+|\\s+$"), "");
+      json j = {{"type", "hid_cmd"}, {"data", "click"}, {"parameter", param}};
+      std::string jsonReport = j.dump();
       m_server->sendToClients(jsonReport);
       log("Input report received and sent to clients: " + jsonReport);
     } else if (command == "unknown") {
@@ -444,7 +436,7 @@ void HIDDevice::execute(const json &response) {
 
 std::unordered_set<std::string> shortCommands = {
     "translate",  "translated", "definition", "summarize",
-    "summarized", "type",       "input"};
+    "summarized", "type",       "input",      "click"};
 std::string trim(const std::string &str) {
   const std::string whitespace = " \t\n\r\f\v";
   std::size_t first = str.find_first_not_of(whitespace);
@@ -511,7 +503,7 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
       // std::cout << std::endl  << std::dec;
     } else {
 
-#if 1
+#if 0
       // OpenAIClient ai_client(this, "system_message");
       // std::string ss = "{\"command\":\"launch "
       //                  "browser\",\"parameter\":\"https://www.youtube.com/"
@@ -525,7 +517,7 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
       // "{\"command\":\"summarize\",\"parameter\":\"https://www.youtube.com/"
       //             "results?search_query=purple+rain\"}";
 
-      std::string ss = "{\"command\":\"click\",\"parameter\":\"Musk\"}";
+      std::string ss = "{\"command\":\"click\",\"parameter\":\"Harris\"}";
 
       // json response_json = json::parse(ss);
       m_ai_client->processResponse(ss);
@@ -563,9 +555,32 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
             std::cout << "Simulating paste of: " << cmd.second << std::endl;
             pasteText();
           } else {
-            std::string jsonReport =
-                JSON::makeObject({{"type", "hid_cmd"}, {"data", cmd.first}});
+
+            std::string param = cmd.second;
+            // Keep only alphanumeric and space, replace everything else with
+            // space
+            param =
+                std::regex_replace(param, std::regex("[^a-zA-Z0-9\\s]+"), " ");
+            // Replace all whitespace (including newlines) with single space
+            param = std::regex_replace(param, std::regex("\\s+"), " ");
+            // Trim spaces at beginning and end
+            param = std::regex_replace(param, std::regex("^\\s+|\\s+$"), "");
+
+            std::string data = cmd.first;
+            // Keep only alphanumeric and space, replace everything else with
+            // space
+            data =
+                std::regex_replace(data, std::regex("[^a-zA-Z0-9\\s]+"), " ");
+            // Replace all whitespace (including newlines) with single space
+            data = std::regex_replace(data, std::regex("\\s+"), " ");
+            // Trim spaces at beginning and end
+            data = std::regex_replace(data, std::regex("^\\s+|\\s+$"), "");
+
+            json j = {
+                {"type", "hid_cmd"}, {"data", data}, {"parameter", param}};
+            std::string jsonReport = j.dump();
             m_server->sendToClients(jsonReport);
+
             log("Sent short command to clients: " + jsonReport);
           }
 
@@ -678,8 +693,9 @@ private:
     log("HID device added and initialized");
 
     // Notify clients about the new device
-    m_socket_server.sendToClients(JSON::makeObject(
-        {{"type", "device_added"}, {"message", "New HID device connected"}}));
+    json j = {{"type", "device_added"},
+              {"message", "New HID device connected"}};
+    m_socket_server.sendToClients(j.dump());
   }
 
   void handleDeviceRemoved(IOHIDDeviceRef device) {
@@ -696,9 +712,9 @@ private:
       log("HID device removed and cleaned up");
 
       // Notify clients about the removed device
-      m_socket_server.sendToClients(
-          JSON::makeObject({{"type", "device_removed"},
-                            {"message", "HID device disconnected"}}));
+      json j = {{"type", "device_removed"},
+                {"message", "HID device disconnected"}};
+      m_socket_server.sendToClients(j.dump());
     } else {
       log("Removed device not found in the device list");
     }
