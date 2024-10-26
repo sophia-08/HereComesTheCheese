@@ -339,7 +339,7 @@ function connectNativeHost() {
       handleRetrievedCredentials(response.username, response.password);
     } else if (response.type === "hid_cmd") {
       // Handle the retrieved credentials
-      handleHidCmd(response.data, response.parameter);
+      handleHidCmd(response.cmd_id, response.parameter);
     } 
   });
 

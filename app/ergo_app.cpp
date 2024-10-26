@@ -405,12 +405,12 @@ void HIDDevice::execute(const json &response) {
     } else if (command == "translate") {
 
     } else if (command == "definition") {
-      json j = {{"type", "hid_cmd"}, {"data", "definition"}};
+      json j = {{"type", "hid_cmd"}, {"cmd_d", "definition"}};
       std::string jsonReport = j.dump();
       m_server->sendToClients(jsonReport);
       log("Input report received and sent to clients: " + jsonReport);
     } else if (command == "summarize") {
-      json j = {{"type", "hid_cmd"}, {"data", "summarize"}};
+      json j = {{"type", "hid_cmd"}, {"cmd_id", "summarize"}};
       std::string jsonReport = j.dump();
       m_server->sendToClients(jsonReport);
       log("Input report received and sent to clients: " + jsonReport);
@@ -423,7 +423,7 @@ void HIDDevice::execute(const json &response) {
       param = std::regex_replace(param, std::regex("\\s+"), " ");
       // Trim spaces at beginning and end
       param = std::regex_replace(param, std::regex("^\\s+|\\s+$"), "");
-      json j = {{"type", "hid_cmd"}, {"data", "click"}, {"parameter", param}};
+      json j = {{"type", "hid_cmd"}, {"cmd_id", "click"}, {"parameter", param}};
       std::string jsonReport = j.dump();
       m_server->sendToClients(jsonReport);
       log("Input report received and sent to clients: " + jsonReport);
@@ -566,18 +566,18 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
             // Trim spaces at beginning and end
             param = std::regex_replace(param, std::regex("^\\s+|\\s+$"), "");
 
-            std::string data = cmd.first;
+            std::string cmd_id = cmd.first;
             // Keep only alphanumeric and space, replace everything else with
             // space
-            data =
-                std::regex_replace(data, std::regex("[^a-zA-Z0-9\\s]+"), " ");
+            cmd_id =
+                std::regex_replace(cmd_id, std::regex("[^a-zA-Z0-9\\s]+"), " ");
             // Replace all whitespace (including newlines) with single space
-            data = std::regex_replace(data, std::regex("\\s+"), " ");
+            cmd_id = std::regex_replace(cmd_id, std::regex("\\s+"), " ");
             // Trim spaces at beginning and end
-            data = std::regex_replace(data, std::regex("^\\s+|\\s+$"), "");
+            cmd_id = std::regex_replace(cmd_id, std::regex("^\\s+|\\s+$"), "");
 
             json j = {
-                {"type", "hid_cmd"}, {"data", data}, {"parameter", param}};
+                {"type", "hid_cmd"}, {"cmd_id", cmd_id}, {"parameter", param}};
             std::string jsonReport = j.dump();
             m_server->sendToClients(jsonReport);
 
