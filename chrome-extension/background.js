@@ -93,6 +93,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })();
       return true;
       break;
+    case "LOG":
+      console.log(message.data.message);
+      break;
   }
 });
 

@@ -1,4 +1,4 @@
-
+console.log = customLog;
 
 function grabHeadlines() {
     const headlines = [];
@@ -399,7 +399,7 @@ function grabHeadlines() {
     // Use your existing filterHeadlines function to find the best match
     const bestMatch = filterHeadlines(headlines, searchInput);
     
-    if (bestMatch && bestMatch.headline ) {
+    if (bestMatch && bestMatch.headline && bestMatch.matchPercentage > 40 ) {
         console.log('openArticle, Best match found:', bestMatch);
         window.location.href = bestMatch.headline.url;
         
