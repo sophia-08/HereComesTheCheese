@@ -98,5 +98,71 @@ function getLinkText(link) {
 }
 
 // Usage example
-const links = getViewportLinks();
-console.log(links);
+// const links = getViewportLinks();
+// console.log(links);
+
+// Throttle function to limit how often the update runs
+function throttle(func, limit) {
+    let inThrottle;
+    return function() {
+        const args = arguments;
+        const context = this;
+        if (!inThrottle) {
+            func.apply(context, args);
+            inThrottle = true;
+            setTimeout(() => inThrottle = false, limit);
+        }
+    }
+}
+
+// Function to handle updates
+function setupScrollListener() {
+    // Initial list
+    let currentLinks = getViewportLinks();
+    
+    // Send initial links
+    chrome.runtime.sendMessage({ 
+        type: 'linksUpdate',
+        links: currentLinks 
+    });
+
+    // Throttled scroll handler
+    const handleScroll = throttle(() => {
+        const newLinks = getViewportLinks();
+        
+        // Send update only if links have changed
+        if (JSON.stringify(currentLinks) !== JSON.stringify(newLinks)) {
+            currentLinks = newLinks;
+            chrome.runtime.sendMessage({ 
+                type: 'linksUpdate',
+                links: newLinks 
+            });
+        }
+    }, 150); // Update at most every 150ms
+
+    // Add scroll event listener
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Optional: Also listen for window resize
+    window.addEventListener('resize', handleScroll, { passive: true });
+
+    // Cleanup function
+    return () => {
+        window.removeEventListener('scroll', handleScroll);
+        window.removeEventListener('resize', handleScroll);
+    };
+}
+
+// Initialize the tracking
+function initializeLinkTracking() {
+    // Choose one of the two approaches:
+    const cleanup = setupScrollListener();
+    // OR
+    // const cleanup = setupLinkObserver();
+
+    // Cleanup when the content script is unloaded
+    window.addEventListener('unload', cleanup);
+}
+
+// Start tracking
+initializeLinkTracking();

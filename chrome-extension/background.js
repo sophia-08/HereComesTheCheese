@@ -99,6 +99,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       console.log(`%c[content.js] ${message.data.message}`, logStyle);
       // console.log(message.data.message);
       break;
+    case "linksUpdate": {
+      console.log('Updated links:', message.links);
+    }
   }
 });
 
