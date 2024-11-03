@@ -18,3 +18,4 @@ out/
 *.wav
 *.lc3
 bin/
+*.log
