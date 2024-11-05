@@ -398,14 +398,15 @@ void HIDDevice::execute(const json &response) {
 #endif
       std::cout << "run: " << cmd << std::endl;
       system(cmd.c_str());
-    } else if (command == "youtube") {
-      std::string cmd = "open -a \"YouTube\"";
-      system(cmd.c_str());
+    // } else if (command == "youtube") {
+    //   std::string cmd = "open -a \"YouTube\"";
+    //   system(cmd.c_str());
 
-    } else if (command == "translate") {
+    } 
+    else if (command == "translate") {
 
     } else if (command == "definition") {
-      json j = {{"type", "hid_cmd"}, {"cmd_d", "definition"}};
+      json j = {{"type", "hid_cmd"}, {"cmd_id", "definition"}};
       std::string jsonReport = j.dump();
       m_server->sendToClients(jsonReport);
       log("Input report received and sent to clients: " + jsonReport);
@@ -414,20 +415,23 @@ void HIDDevice::execute(const json &response) {
       std::string jsonReport = j.dump();
       m_server->sendToClients(jsonReport);
       log("Input report received and sent to clients: " + jsonReport);
-    } else if (command == "click") {
-      std::string param = response["parameter"].get<std::string>();
+    } 
+    // else if (command == "click") {
+    //   std::string param = response["parameter"].get<std::string>();
 
-      // Keep only alphanumeric and space, replace everything else with space
-      param = std::regex_replace(param, std::regex("[^a-zA-Z0-9\\s]+"), " ");
-      // Replace all whitespace (including newlines) with single space
-      param = std::regex_replace(param, std::regex("\\s+"), " ");
-      // Trim spaces at beginning and end
-      param = std::regex_replace(param, std::regex("^\\s+|\\s+$"), "");
-      json j = {{"type", "hid_cmd"}, {"cmd_id", "click"}, {"parameter", param}};
-      std::string jsonReport = j.dump();
-      m_server->sendToClients(jsonReport);
-      log("Input report received and sent to clients: " + jsonReport);
-    } else if (command == "unknown") {
+    //   // Keep only alphanumeric and space, replace everything else with space
+    //   param = std::regex_replace(param, std::regex("[^a-zA-Z0-9\\s]+"), " ");
+    //   // Replace all whitespace (including newlines) with single space
+    //   param = std::regex_replace(param, std::regex("\\s+"), " ");
+    //   // Trim spaces at beginning and end
+    //   param = std::regex_replace(param, std::regex("^\\s+|\\s+$"), "");
+    //   json j = {{"type", "hid_cmd"}, {"cmd_id", "click"}, {"parameter", param}};
+    //   std::string jsonReport = j.dump();
+    //   m_server->sendToClients(jsonReport);
+    //   log("Input report received and sent to clients: " + jsonReport);
+    
+    // }
+     else if (command == "unknown") {
     }
   } catch (const json::exception &e) {
     std::cerr << "Error processing command: " << e.what() << std::endl;
@@ -452,14 +456,19 @@ splitFirstWord(const std::string &sentence) {
   std::size_t spacePos = trimmed.find(' ');
 
   // If no space found, return the whole string as first word and empty string
-  // as remainder
+std::string firstWord;
+std::string remainder;
+
   if (spacePos == std::string::npos) {
-    return std::make_pair(trimmed, "");
+    firstWord = trimmed;
+    remainder = "";
+  } else{
+      // Split into first word and remainder
+  firstWord = trimmed.substr(0, spacePos);
+  remainder = trim(trimmed.substr(spacePos + 1));
   }
 
-  // Split into first word and remainder
-  std::string firstWord = trimmed.substr(0, spacePos);
-  std::string remainder = trim(trimmed.substr(spacePos + 1));
+
 
   // Transform first word to lowercase
   std::transform(firstWord.begin(), firstWord.end(), firstWord.begin(),
@@ -469,7 +478,9 @@ splitFirstWord(const std::string &sentence) {
   firstWord.erase(std::remove_if(firstWord.begin(), firstWord.end(), ::ispunct),
                   firstWord.end());
 
-  return std::make_pair(trim(firstWord), remainder);
+  std::cout <<"split: " << firstWord << ", " << remainder << std::endl;
+
+  return std::make_pair(to_lowercase(trim(firstWord)), remainder);
 }
 #define BUF_SIZE 170
 void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
@@ -551,10 +562,14 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
               (cmd.first.compare("input") == 0)) {
             std::cout << "Type: " << cmd.second << std::endl;
 
-            copyTextToClipboard(cmd.second);
-            std::cout << "Simulating paste of: " << cmd.second << std::endl;
+            auto str1 = std::regex_replace(cmd.second, std::regex("\\[BLANK_AUDIO\\]"), "");
+            std::cout << "Type after clean up: " << str1 << std::endl;
+
+            copyTextToClipboard(str1);
+            std::cout << "Simulating paste of: " << str1 << std::endl;
             pasteText();
           } else {
+            std::cout << "Short command: " << cmd.first << ", " << cmd.second << std::endl;
 
             std::string param = cmd.second;
             // Keep only alphanumeric and space, replace everything else with
@@ -589,7 +604,7 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength) {
 #if 1
 
           std::string response = m_ai_client->generateText(transcription);
-          m_ai_client->processResponse(response);
+          // m_ai_client->processResponse(response);
 #endif
         } else {
           std::cout << "Transcription: " << transcription << ", ignored"
