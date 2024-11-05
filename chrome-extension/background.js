@@ -554,6 +554,10 @@ function handleHidCmd(cmd, parameter) {
       });
     });
   } else if (cmd == "summarize") {
+
+      // chrome.windows.getCurrent({ populate: true }, (window) => {
+      //   chrome.sidePanel.open({ windowId: window.id });
+      // });
     // send cmd to sidepanel
     chrome.runtime.sendMessage({
       type: "hid_cmd",
