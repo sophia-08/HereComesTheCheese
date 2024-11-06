@@ -1,7 +1,7 @@
 CXX = c++
 CC = cc
-CXXFLAGS = -std=c++17 -Wall -Wextra
-LDFLAGS = -framework IOKit -framework CoreFoundation -framework Cocoa  -L lib -llc3 -lcpr
+CXXFLAGS = -std=c++17 -Wall -Wextra -I/opt/homebrew/Cellar/cpr/1.11.0/include -I/opt/homebrew/Cellar/nlohmann-json/3.11.3/include
+LDFLAGS = -framework IOKit -framework CoreFoundation -framework Cocoa  -L lib -llc3 -lcpr -L /opt/homebrew/Cellar/cpr/1.11.0/lib 
 
 OUTDIR = out
 

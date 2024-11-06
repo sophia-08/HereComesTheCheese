@@ -19,3 +19,5 @@ out/
 *.lc3
 bin/
 *.log
+tmp/
+test/
