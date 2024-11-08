@@ -1,6 +1,9 @@
 on run argv
     log "Script started"
-    log "Arguments received: " & argv
+    log "Arguments received:"
+    repeat with i from 1 to count of argv
+        log "  Arg " & i & ": " & item i of argv
+    end repeat
     
     set reminderName to item 1 of argv
     set reminderDueDateString to item 2 of argv
@@ -42,7 +45,7 @@ on run argv
     end tell
     
     log "Reminder created successfully"
-    display notification "Reminder created: " & reminderName with title "Reminder Added"
+    return "Reminder created successfully: " & reminderName
 end run
 
 on parseDate(dateString)
