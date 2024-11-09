@@ -50,6 +50,9 @@ add_executable(ergo_test
     src/OpenAIClient.cpp
     src/ProxySocketServer.cpp
     src/Logger.cpp
+    src/HIDManager.cpp
+    src/wave.c
+    src/type_by_paste.mm
 )
 
 # Link libraries for the test executable
@@ -73,5 +76,12 @@ add_test(NAME ErgoTest COMMAND ergo_test)
 # Enable testing
 enable_testing()
 
-# Set output directory
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/out)
+# For the main executable
+set_target_properties(ergo_app PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out
+)
+
+# For the test executable
+set_target_properties(ergo_test PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out
+)
