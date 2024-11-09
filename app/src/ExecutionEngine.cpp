@@ -8,16 +8,17 @@
 ExecutionEngine::ExecutionEngine() = default;
 ExecutionEngine::~ExecutionEngine() = default;
 
-void ExecutionEngine::execute(const std::string& response)
+void ExecutionEngine::execute(const std::string &response)
 {
-    std::cout << "execute: Starting execution with response:\n" << response << std::endl;
+    std::cout << "execute: Starting execution with response:\n"
+              << response << std::endl;
     std::vector<std::string> functionCalls = parseFunctionCalls(response);
 
     std::cout << "execute: Parsed " << functionCalls.size() << " function calls." << std::endl;
 
     for (size_t i = 0; i < functionCalls.size(); ++i)
     {
-        const auto& call = functionCalls[i];
+        const auto &call = functionCalls[i];
         std::cout << "execute: Processing function call " << i + 1 << ": " << call << std::endl;
 
         if (call == "<END_OF_PLAN>")
@@ -38,43 +39,121 @@ void ExecutionEngine::execute(const std::string& response)
         }
 
         // Replace variables in parameters
-        for (auto& param : params)
+        for (auto &param : params)
         {
             std::cout << "execute: Processing param: " << param << std::endl;
-            if (param.length() >= 3 && param[0] == '[' && param[param.length() - 1] == ']' && param[1] == '$')
+            if (param.length() >= 2 && param[0] == '[' && param[param.length() - 1] == ']')
             {
-                std::string innerParam = param.substr(1, param.length() - 2);
-                std::cout << "execute: Found array parameter with variable: " << innerParam << std::endl;
-                if (m_variables.find(innerParam) != m_variables.end())
+                // This is an array parameter
+                std::vector<std::string> innerParams;
+                std::string innerParamsStr = param.substr(1, param.length() - 2);
+                std::string currentInnerParam;
+                bool inQuotes = false;
+
+                for (size_t j = 0; j < innerParamsStr.length(); ++j)
                 {
-                    param = m_variables[innerParam];
-                    std::cout << "execute: Replaced array parameter with: " << param << std::endl;
+                    char c = innerParamsStr[j];
+                    if (c == '"')
+                    {
+                        inQuotes = !inQuotes;
+                    }
+                    else if (c == ',' && !inQuotes)
+                    {
+                        std::string processedParam = Utils::trim(currentInnerParam);
+                        // Remove quotes if present
+                        if (processedParam.length() >= 2 && processedParam[0] == '"' && processedParam[processedParam.length() - 1] == '"')
+                        {
+                            processedParam = processedParam.substr(1, processedParam.length() - 2);
+                        }
+
+                        if (processedParam[0] == '$')
+                        {
+                            int varIndex = std::stoi(processedParam.substr(1)) - 1;
+                            if (varIndex >= 0 && varIndex < static_cast<int>(i))
+                            {
+                                std::string varName = "$" + std::to_string(varIndex + 1);
+                                if (m_variables.find(varName) != m_variables.end())
+                                {
+                                    processedParam = m_variables[varName];
+                                    std::cout << "execute: Replaced variable " << varName << " with value: " << processedParam << std::endl;
+                                }
+                            }
+                        }
+                        innerParams.push_back(processedParam);
+                        currentInnerParam.clear();
+                    }
+                    else
+                    {
+                        currentInnerParam += c;
+                    }
                 }
+
+                // Process the last parameter
+                if (!currentInnerParam.empty())
+                {
+                    std::string processedParam = Utils::trim(currentInnerParam);
+                    if (processedParam.length() >= 2 && processedParam[0] == '"' && processedParam[processedParam.length() - 1] == '"')
+                    {
+                        processedParam = processedParam.substr(1, processedParam.length() - 2);
+                    }
+
+                    if (processedParam[0] == '$')
+                    {
+                        int varIndex = std::stoi(processedParam.substr(1)) - 1;
+                        if (varIndex >= 0 && varIndex < static_cast<int>(i))
+                        {
+                            std::string varName = "$" + std::to_string(varIndex + 1);
+                            if (m_variables.find(varName) != m_variables.end())
+                            {
+                                processedParam = m_variables[varName];
+                                std::cout << "execute: Replaced variable " << varName << " with value: " << processedParam << std::endl;
+                            }
+                        }
+                    }
+                    innerParams.push_back(processedParam);
+                }
+
+                // Reconstruct the array parameter
+                param = "[" + Utils::join(innerParams, ", ") + "]";
+                std::cout << "execute: Processed array parameter: " << param << std::endl;
             }
             else if (param[0] == '$')
             {
-                if (m_variables.find(param) != m_variables.end())
+                int varIndex = std::stoi(param.substr(1)) - 1;
+                if (varIndex >= 0 && varIndex < static_cast<int>(i))
                 {
-                    param = m_variables[param];
-                    std::cout << "execute: Replaced variable " << param << " with value: " << param << std::endl;
+                    std::string varName = "$" + std::to_string(varIndex + 1);
+                    if (m_variables.find(varName) != m_variables.end())
+                    {
+                        param = m_variables[varName];
+                        std::cout << "execute: Replaced variable " << varName << " with value: " << param << std::endl;
+                    }
                 }
             }
+        }
+
+        std::cout << "execute: Calling executeFunctionCall with:" << std::endl;
+        std::cout << "  Function name: " << functionName << std::endl;
+        std::cout << "  Parameters:" << std::endl;
+        for (const auto &p : params)
+        {
+            std::cout << "    " << p << std::endl;
         }
 
         std::string result = executeFunctionCall(functionName, params);
         result = Utils::trim(result);
 
         // Store result in variables
-        std::string variableName = "$" + std::to_string(m_variables.size() + 1);
+        std::string variableName = "$" + std::to_string(i + 1);
         m_variables[variableName] = result;
-        
-        std::cout << "execute: Stored result in variable " << variableName << std::endl;
+
+        std::cout << "execute: Stored result in variable " << variableName << ": " << result << std::endl;
     }
 
     std::cout << "execute: Finished execution." << std::endl;
 }
 
-std::vector<std::string> ExecutionEngine::parseFunctionCalls(const std::string& response)
+std::vector<std::string> ExecutionEngine::parseFunctionCalls(const std::string &response)
 {
     std::cout << "parseFunctionCalls: Starting to parse response" << std::endl;
     std::vector<std::string> calls;
@@ -114,9 +193,9 @@ std::vector<std::string> ExecutionEngine::parseFunctionCalls(const std::string& 
     return calls;
 }
 
-void ExecutionEngine::parseSingleFunctionCall(const std::string& call, 
-                                            std::string& functionName, 
-                                            std::vector<std::string>& params)
+void ExecutionEngine::parseSingleFunctionCall(const std::string &call,
+                                              std::string &functionName,
+                                              std::vector<std::string> &params)
 {
     size_t openParen = call.find('(');
     size_t closeParen = call.rfind(')');
@@ -126,24 +205,63 @@ void ExecutionEngine::parseSingleFunctionCall(const std::string& call,
         functionName = Utils::trim(call.substr(0, openParen));
         std::string paramsStr = call.substr(openParen + 1, closeParen - openParen - 1);
 
-        std::istringstream iss(paramsStr);
-        std::string param;
-        while (std::getline(iss, param, ','))
+        std::vector<std::string> tempParams;
+        std::string currentParam;
+        int bracketCount = 0;
+        bool inQuotes = false;
+
+        for (char c : paramsStr)
         {
-            param = std::regex_replace(param, std::regex("^\\s+|\\s+$|\""), "");
-            params.push_back(param);
+            if (c == '"' && bracketCount == 0)
+            {
+                inQuotes = !inQuotes;
+                if (!inQuotes && !currentParam.empty())
+                {
+                    tempParams.push_back(Utils::trim(currentParam));
+                    currentParam.clear();
+                }
+            }
+            else if (c == '[')
+            {
+                bracketCount++;
+                currentParam += c;
+            }
+            else if (c == ']')
+            {
+                bracketCount--;
+                currentParam += c;
+            }
+            else if (c == ',' && bracketCount == 0 && !inQuotes)
+            {
+                if (!currentParam.empty())
+                {
+                    tempParams.push_back(Utils::trim(currentParam));
+                    currentParam.clear();
+                }
+            }
+            else
+            {
+                currentParam += c;
+            }
         }
+
+        if (!currentParam.empty())
+        {
+            tempParams.push_back(Utils::trim(currentParam));
+        }
+
+        params = tempParams;
     }
 }
 
-std::string ExecutionEngine::executeFunctionCall(const std::string& functionName, 
-                                               const std::vector<std::string>& params)
+std::string ExecutionEngine::executeFunctionCall(const std::string &functionName,
+                                                 const std::vector<std::string> &params)
 {
     std::string scriptPath = functionName + ".scpt";
     std::stringstream command;
     command << "osascript \"" << scriptPath << "\"";
 
-    for (const auto& param : params)
+    for (const auto &param : params)
     {
         command << " \"" << param << "\"";
     }
@@ -151,7 +269,7 @@ std::string ExecutionEngine::executeFunctionCall(const std::string& functionName
     std::cout << "Executing command: " << command.str() << std::endl;
 
     std::string result;
-    FILE* pipe = popen(command.str().c_str(), "r");
+    FILE *pipe = popen(command.str().c_str(), "r");
     if (pipe)
     {
         char buffer[128];

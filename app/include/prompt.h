@@ -32,7 +32,7 @@ std::string system_message =
  " - Creates a new reminder and returns the status of the reminder creation."
  " - The format for due_date is 'YYYY-MM-DD HH:MM:SS'. If 'all_day' is True, then the format is 'YYYY-MM-DD'."
  " - The list_name is optional, use an empty string if not applicable."
- " - The priority is optional and defaults to 0."
+ " - The priority has scale of 1 to 9, 1 is the highest, and defaults to 0, which means None."
  " - The all_day parameter is optional and defaults to False."
  ""
  "6. join():"

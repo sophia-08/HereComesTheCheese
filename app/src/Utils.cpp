@@ -78,4 +78,15 @@ std::string cleanupText(const std::string& text)
     return trim(cleaned);
 }
 
+    std::string join(const std::vector<std::string>& vec, const std::string& delim) {
+        std::string result;
+        for (size_t i = 0; i < vec.size(); ++i) {
+            if (i > 0) {
+                result += delim;
+            }
+            result += vec[i];
+        }
+        return result;
+    }
+    
 } // namespace Utils

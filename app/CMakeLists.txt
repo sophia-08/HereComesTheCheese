@@ -50,6 +50,7 @@ target_link_libraries(ergo_app
 # Test executable
 add_executable(ergo_test
     test/HIDDeviceTest.cpp
+    test/ExecutionEngineTest.cpp
     src/HIDDevice.cpp
     src/OpenAIClient.cpp
     src/ProxySocketServer.cpp
@@ -57,7 +58,6 @@ add_executable(ergo_test
     src/HIDManager.cpp
     src/wave.c
     src/type_by_paste.mm
-    # Add new source files
     src/InputHandler.cpp
     src/ExecutionEngine.cpp
     src/WhisperClient.cpp

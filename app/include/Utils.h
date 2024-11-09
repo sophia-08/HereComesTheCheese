@@ -15,4 +15,5 @@ namespace Utils {
     void copyTextToClipboard(const std::string& text);
     void pasteText();
     std::string cleanupText(const std::string& text);
+    std::string join(const std::vector<std::string>& vec, const std::string& delim);
 }

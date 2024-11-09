@@ -74,7 +74,10 @@ void InputHandler::processAudioData()
         saveWavFile(m_pcm_data, "out.wav");
         
         std::string transcription = m_whisper_client.transcribe(m_pcm_data);
-        transcription = "schedule a meeting with lily at 2pm for a quick sync up";        
+        // transcription = "Remind me at 6pm to dinner";
+        // transcription = "The application due at 11/6, remind me 1 day earlier, this is very important";
+        transcription = "Send email to ken and lily that we will meet tomorrow noon";
+        // transcription = "schedule a meeting with lily at 2pm for a quick sync up";        
         std::cout << "Transcription: " << transcription << std::endl;
         
         auto [command, parameter] = Utils::splitFirstWord(transcription);
