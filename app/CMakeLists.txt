@@ -20,6 +20,10 @@ add_compile_options(-Wall -Wextra)
 
 # Source files for ergo_app
 set(ERGO_APP_SOURCES
+    src/InputHandler.cpp
+    src/ExecutionEngine.cpp
+    src/WhisperClient.cpp
+    src/Utils.cpp    
     src/main.cpp
     src/HIDDevice.cpp
     src/OpenAIClient.cpp
@@ -53,6 +57,11 @@ add_executable(ergo_test
     src/HIDManager.cpp
     src/wave.c
     src/type_by_paste.mm
+    # Add new source files
+    src/InputHandler.cpp
+    src/ExecutionEngine.cpp
+    src/WhisperClient.cpp
+    src/Utils.cpp
 )
 
 # Link libraries for the test executable

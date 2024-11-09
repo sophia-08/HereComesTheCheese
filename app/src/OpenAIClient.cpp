@@ -1,12 +1,13 @@
 #include "OpenAIClient.h"
-#include "Logger.h"
+#include "HIDDevice.h"  
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
-
+#include <iostream>
+#include "Logger.h"
 using json = nlohmann::json;
 
-OpenAIClient::OpenAIClient(HIDDevice *device, const std::string &system_message)
-    : system_role(system_message), _device(device) {
+OpenAIClient::OpenAIClient(ExecutionEngine* engine, const std::string &system_message)
+    : system_role(system_message),  m_execution_engine(engine){
     const char *env_key = std::getenv("OPENAI_API_KEY");
     if (!env_key) {
         throw std::runtime_error("OPENAI_API_KEY environment variable not set");
@@ -15,9 +16,7 @@ OpenAIClient::OpenAIClient(HIDDevice *device, const std::string &system_message)
 }
 
 void OpenAIClient::processResponse(const std::string &text) {
-    if (_device) {
-        _device->execute(text);
-    }
+    m_execution_engine->execute(text);
 }
 
 std::string OpenAIClient::generateText(const std::string &prompt) {
@@ -42,6 +41,8 @@ std::string OpenAIClient::generateText(const std::string &prompt) {
         return "Error: " + std::to_string(response.status_code) + " - " +
                response.text;
     }
+
+    std::cout << "LLM response: " << response.text << std::endl;
 
     try {
         json response_json = json::parse(response.text);
