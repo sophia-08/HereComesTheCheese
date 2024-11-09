@@ -33,6 +33,22 @@ struct WAVHeader
     char data[4] = {'d', 'a', 't', 'a'};
     uint32_t dataSize;
 };
+
+std::string getCurrentTime() {
+    // Get current time
+    std::time_t now = std::time(nullptr);
+    std::tm* localTime = std::localtime(&now);
+
+    // Create a stringstream to format the time
+    std::stringstream ss;
+
+    // Format the time as 'YYYY-MM-DD HH:MM:SS'
+    ss << std::put_time(localTime, "%Y-%m-%d %H:%M:%S");
+
+    // Return the formatted time as a string
+    return ss.str();
+}
+
 std::unordered_set<std::string> shortCommands = {
     "translate", "translated", "definition", "summarize",
     "summarized", "type", "input", "click"};
@@ -344,8 +360,9 @@ void HIDDevice::handleInputReport(uint8_t *report, CFIndex reportLength)
                 std::string transcription = whisper_client.transcribe(pcm_data);
 
                 // transcription = "Remind me at 6pm to dinner";
-                // transcription = "Send email to ken and lily that we will meet tomorrow noon";
-                transcription = "schedule a meeting with lily at 2pm for a quick sync up";
+                transcription = "Send email to ken and lily that we will meet tomorrow noon";
+                // transcription = "schedule a meeting with ken at 2pm for a quick sync up";
+                transcription = getCurrentTime() + ", " + transcription;
 
                 std::cout << "Transcription: " << transcription << std::endl;
 
