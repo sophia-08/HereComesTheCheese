@@ -80,11 +80,15 @@ void InputHandler::processAudioData()
         // transcription = "schedule a meeting with lily at 2pm for a quick sync up";        
         // transcription = "Summarize";
         // transcription = "play you raise me up on youtube";
-//         transcription = "Send an email to Ken and Lily that I love taking classes with them, but I have to stop"
-// " because I have too much homework and I need to finish it first."
-// " I need to read Hamlet as well as do my Spanish homework and I hope that they'll take this"
-// " time to also finish their calculus homework.";
-        transcription = "Definition";
+        transcription = "Send an email to Ken and Lily that I love taking classes with them, but I have to stop"
+" because I have too much homework and I need to finish it first."
+" I need to read Hamlet as well as do my Spanish homework and I hope that they'll take this"
+" time to also finish their calculus homework.";
+        // transcription = "Definition";
+        // transcription = "go to wikipedia and search for toilet paper orientation";
+        // transcription = "search github for we are the rats";
+
+
 
         std::cout << "Transcription: " << transcription << std::endl<< std::endl;
         m_pcm_data.clear();

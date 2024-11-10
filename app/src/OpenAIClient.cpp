@@ -29,7 +29,7 @@ std::string OpenAIClient::generateText(const std::string &prompt) {
 
     messages.push_back({{"role", "user"}, {"content", prompt}});
 
-    json request_data = {{"model", "gpt-4o-mini"}, {"messages", messages}};
+    json request_data = {{"model", "gpt-4o"}, {"messages", messages}};
 
     auto response =
         cpr::Post(cpr::Url{"https://api.openai.com/v1/chat/completions"},
