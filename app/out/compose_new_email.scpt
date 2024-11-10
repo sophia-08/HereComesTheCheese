@@ -6,7 +6,7 @@ on run argv
     set recipientList to my stripArrayBrackets(item 1 of argv)
     set ccList to my stripArrayBrackets(item 2 of argv)
     set subjectLine to item 3 of argv
-    set messageBody to item 4 of argv
+    set messageBody to my replaceNewlines(item 4 of argv)
     set attachmentPaths to my stripArrayBrackets(item 5 of argv)
 
     log "Recipients: " & recipientList
@@ -117,3 +117,13 @@ on trimString(theString)
     
     return trimmed
 end trimString
+
+on replaceNewlines(theString)
+    set oldDelimiters to AppleScript's text item delimiters
+    set AppleScript's text item delimiters to "\\n"
+    set theArray to every text item of theString
+    set AppleScript's text item delimiters to return
+    set theString to theArray as string
+    set AppleScript's text item delimiters to oldDelimiters
+    return theString
+end replaceNewlines
