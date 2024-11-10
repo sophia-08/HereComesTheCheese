@@ -76,9 +76,19 @@ void InputHandler::processAudioData()
         std::string transcription = m_whisper_client.transcribe(m_pcm_data);
         // transcription = "Remind me at 6pm to dinner";
         // transcription = "The application due at 11/6, remind me 1 day earlier, this is very important";
-        transcription = "Send email to ken and lily that we will meet tomorrow noon";
+        // transcription = "Send email to ken woods and lily that we will meet tomorrow noon";
         // transcription = "schedule a meeting with lily at 2pm for a quick sync up";        
-        std::cout << "Transcription: " << transcription << std::endl;
+        // transcription = "Summarize";
+        // transcription = "play you raise me up on youtube";
+//         transcription = "Send an email to Ken and Lily that I love taking classes with them, but I have to stop"
+// " because I have too much homework and I need to finish it first."
+// " I need to read Hamlet as well as do my Spanish homework and I hope that they'll take this"
+// " time to also finish their calculus homework.";
+        transcription = "Definition";
+
+        std::cout << "Transcription: " << transcription << std::endl<< std::endl;
+        m_pcm_data.clear();
+        // return;
         
         auto [command, parameter] = Utils::splitFirstWord(transcription);
         std::cout << "command: " << command << ", parameter: " << parameter << std::endl;
@@ -93,8 +103,6 @@ void InputHandler::processAudioData()
             transcription = std::string("Current time is ") + Utils::getCurrentTime() + ", " + transcription;
             std::string response = m_ai_client->generateText(transcription);
         }
-        
-        m_pcm_data.clear();
     }
     catch (const std::exception& e)
     {

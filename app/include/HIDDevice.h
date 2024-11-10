@@ -32,7 +32,7 @@ public:
 
 private:
     IOHIDDeviceRef m_device;
-    ProxySocketServer *m_server;  // Keep if needed by InputHandler
+    ProxySocketServer *m_server;
     uint8_t m_report[256];
     bool m_connected;
     std::unique_ptr<ExecutionEngine> m_execution_engine;

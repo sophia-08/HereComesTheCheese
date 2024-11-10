@@ -21,7 +21,7 @@ void OpenAIClient::processResponse(const std::string &text) {
 
 std::string OpenAIClient::generateText(const std::string &prompt) {
     json messages = json::array();
-    log("generateText: " + prompt);
+    log("Prompt: " + prompt);
 
     if (!system_role.empty()) {
         messages.push_back({{"role", "system"}, {"content", system_role}});
@@ -29,7 +29,7 @@ std::string OpenAIClient::generateText(const std::string &prompt) {
 
     messages.push_back({{"role", "user"}, {"content", prompt}});
 
-    json request_data = {{"model", "gpt-3.5-turbo"}, {"messages", messages}};
+    json request_data = {{"model", "gpt-4o-mini"}, {"messages", messages}};
 
     auto response =
         cpr::Post(cpr::Url{"https://api.openai.com/v1/chat/completions"},
