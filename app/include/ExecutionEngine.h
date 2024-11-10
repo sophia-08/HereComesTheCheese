@@ -3,6 +3,9 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <memory>
+
+class ZoomScheduler;
 
 class ExecutionEngine {
 public:
@@ -18,4 +21,5 @@ public:
 
 protected:
     std::map<std::string, std::string> m_variables;
+    std::unique_ptr<ZoomScheduler> m_zoomScheduler;
 };

@@ -32,6 +32,7 @@ set(ERGO_APP_SOURCES
     src/HIDManager.cpp
     src/wave.c
     src/type_by_paste.mm
+    src/ZoomScheduler.cpp
 )
 
 # Add ergo_app executable
@@ -62,6 +63,7 @@ add_executable(ergo_test
     src/ExecutionEngine.cpp
     src/WhisperClient.cpp
     src/Utils.cpp
+    src/ZoomScheduler.cpp
 )
 
 # Link libraries for the test executable

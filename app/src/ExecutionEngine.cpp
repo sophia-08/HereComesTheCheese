@@ -4,8 +4,9 @@
 #include <regex>
 #include <cstdlib>
 #include "Utils.h"
+#include "ZoomScheduler.h"
 
-ExecutionEngine::ExecutionEngine() = default;
+ExecutionEngine::ExecutionEngine() : m_zoomScheduler(std::make_unique<ZoomScheduler>()) {}
 ExecutionEngine::~ExecutionEngine() = default;
 
 void ExecutionEngine::execute(const std::string &response)
@@ -127,6 +128,42 @@ void ExecutionEngine::execute(const std::string &response)
                     {
                         param = m_variables[varName];
                         std::cout << "execute: Replaced variable " << varName << " with value: " << param << std::endl;
+                    }
+                }
+            }
+            else 
+            {
+                // Handle variables within strings
+                size_t pos = 0;
+                while ((pos = param.find('$', pos)) != std::string::npos)
+                {
+                    // Find the end of the variable number
+                    size_t endPos = pos + 1;
+                    while (endPos < param.length() && std::isdigit(param[endPos]))
+                    {
+                        endPos++;
+                    }
+                    
+                    if (endPos > pos + 1)
+                    {
+                        std::string varNum = param.substr(pos + 1, endPos - pos - 1);
+                        int varIndex = std::stoi(varNum) - 1;
+                        if (varIndex >= 0 && varIndex < static_cast<int>(i))
+                        {
+                            std::string varName = "$" + varNum;
+                            if (m_variables.find(varName) != m_variables.end())
+                            {
+                                std::string replacement = m_variables[varName];
+                                param.replace(pos, endPos - pos, replacement);
+                                std::cout << "execute: Replaced variable " << varName 
+                                        << " in string with value: " << replacement << std::endl;
+                                pos += replacement.length();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        pos++;
                     }
                 }
             }
@@ -257,33 +294,79 @@ void ExecutionEngine::parseSingleFunctionCall(const std::string &call,
 std::string ExecutionEngine::executeFunctionCall(const std::string &functionName,
                                                  const std::vector<std::string> &params)
 {
-    std::string scriptPath = functionName + ".scpt";
-    std::stringstream command;
-    command << "osascript \"" << scriptPath << "\"";
-
-    for (const auto &param : params)
+    if (functionName == "create_zoom_meeting")
     {
-        command << " \"" << param << "\"";
-    }
-
-    std::cout << "Executing command: " << command.str() << std::endl;
-
-    std::string result;
-    FILE *pipe = popen(command.str().c_str(), "r");
-    if (pipe)
-    {
-        char buffer[128];
-        while (!feof(pipe))
+        if (params.size() < 3)
         {
-            if (fgets(buffer, 128, pipe) != NULL)
-                result += buffer;
+            return "Error: create_zoom_meeting requires 3 parameters (topic, start_time, duration)";
         }
-        pclose(pipe);
+
+        std::string topic = params[0];
+        std::string startTime = params[1];
+
+        // Convert datetime format from "YYYY-MM-DD HH:MM:SS" to "YYYY-MM-DDTHH:MM:SS"
+        size_t spacePos = startTime.find(' ');
+        if (spacePos != std::string::npos) {
+            startTime.replace(spacePos, 1, "T");
+        }
+
+        int duration;
+        try
+        {
+            duration = std::stoi(params[2]);
+        }
+        catch (const std::exception &e)
+        {
+            return "Error: Invalid duration parameter. Must be an integer.";
+        }
+
+        try
+        {
+            auto joinUrl = m_zoomScheduler->scheduleMeeting(topic, startTime, duration);
+            if (joinUrl)
+            {
+                return *joinUrl;
+            }
+            else
+            {
+                return "Error: Failed to schedule the meeting.";
+            }
+        }
+        catch (const std::exception &e)
+        {
+            return std::string("Error: ") + e.what();
+        }
     }
     else
     {
-        std::cerr << "Failed to execute command: " << command.str() << std::endl;
-    }
+        std::string scriptPath = functionName + ".scpt";
+        std::stringstream command;
+        command << "osascript \"" << scriptPath << "\"";
 
-    return result;
+        for (const auto &param : params)
+        {
+            command << " \"" << param << "\"";
+        }
+
+        std::cout << "Executing command: " << command.str() << std::endl;
+
+        std::string result;
+        FILE *pipe = popen(command.str().c_str(), "r");
+        if (pipe)
+        {
+            char buffer[128];
+            while (!feof(pipe))
+            {
+                if (fgets(buffer, 128, pipe) != NULL)
+                    result += buffer;
+            }
+            pclose(pipe);
+        }
+        else
+        {
+            std::cerr << "Failed to execute command: " << command.str() << std::endl;
+        }
+
+        return result;
+    }
 }
