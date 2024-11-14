@@ -80,14 +80,16 @@ void InputHandler::processAudioData()
         // transcription = "schedule a meeting with lily at 2pm for a quick sync up";        
         // transcription = "Summarize";
         // transcription = "play you raise me up on youtube";
-        transcription = "Send an email to Ken and Lily that I love taking classes with them, but I have to stop"
-" because I have too much homework and I need to finish it first."
-" I need to read Hamlet as well as do my Spanish homework and I hope that they'll take this"
-" time to also finish their calculus homework.";
+//         transcription = "Send an email to John Lee and Jennifer that I love taking classes with them, but I have to stop"
+// " because I have too much homework and I need to finish it first."
+// " I need to read Hamlet as well as do my Spanish homework and I hope that they'll take this"
+// " time to also finish their calculus homework.";
         // transcription = "Definition";
         // transcription = "go to wikipedia and search for toilet paper orientation";
         // transcription = "search github for we are the rats";
 
+        // transcription = "Create a Zoom meeting with lily and John Lee at 2pm, to discuss project";
+        // transcription = "Send an email to John and Lily that I to meet tomorrow noon to study calculus. Attach a zoom meeting";
 
 
         std::cout << "Transcription: " << transcription << std::endl<< std::endl;
@@ -104,7 +106,7 @@ void InputHandler::processAudioData()
         else if (transcription.size() > 10)
         {
             // Attach current time at the begin
-            transcription = std::string("Current time is ") + Utils::getCurrentTime() + ", " + transcription;
+            transcription = std::string("My name is Sophia, Current time is ") + Utils::getCurrentTime() + ", " + transcription;
             std::string response = m_ai_client->generateText(transcription);
         }
     }
