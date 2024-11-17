@@ -55,6 +55,20 @@ set_target_properties(ergo_app PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out
 )
 
+# Proxy
+# Source files for ergo_proxy
+set(ERGO_PROXY_SOURCES
+    src/ergo_proxy.cpp
+)
+
+# Add ergo_proxy executable
+add_executable(ergo_proxy ${ERGO_PROXY_SOURCES})
+
+set_target_properties(ergo_proxy PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/out
+)
+
+
 # Test executable
 # add_executable(ergo_test
 #     test/HIDDeviceTest.cpp
