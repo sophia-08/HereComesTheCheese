@@ -91,18 +91,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// document.addEventListener('mousemove', (e) => {
-//   const range = document.caretRangeFromPoint(e.clientX, e.clientY);
-//   if (range) {
-//     const word = getWordAtPosition(range.startContainer, range.startOffset);
-//     if (word) {
-//       chrome.runtime.sendMessage({
-//         type: "wordUnderCursor",
-//         word: word,
-//       });
-//     }
-//   }
-// });
 let lastWord = "";
 let lastKnownMouseX = 0;
 let lastKnownMouseY = 0;
@@ -773,19 +761,3 @@ function highlightText(strings) {
     }
   });
 }
-
-// document.addEventListener('DOMContentLoaded', function () {
-//   console.log("DOMContentLoaded");
-//   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-//     const currentTab = tabs[0];
-
-//     if (currentTab.url.includes('yahoo.com')) {
-//       chrome.scripting.executeScript({
-//         target: { tabId: currentTab.id },
-//         function: grabHeadlines
-//       }, displayResults);
-//     } else {
-//       document.getElementById('headlines').innerHTML = 'This is not a supported news website.';
-//     }
-//   });
-// });
