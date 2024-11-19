@@ -221,9 +221,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "retrieveCredentials":
       retrieveCredentialsNative();
       break;
-    case "analyzeDOM":
-      analyzeDOMWithChatGPT(message.apiKey);
-      break;
+    // case "analyzeDOM":
+    //   analyzeDOMWithChatGPT(message.apiKey);
+    //   break;
     case "fillAndSubmitForm":
       fillAndSubmitForm(message.formData);
       break;
@@ -283,48 +283,48 @@ function sendNativeMessage(message) {
   }
 }
 
-function analyzeDOMWithChatGPT(apiKey) {
-  chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    if (tabs[0].url.startsWith("chrome://")) {
-      chrome.runtime.sendMessage({
-        type: "chatGPTResponse",
-        response:
-          "Unable to access chrome:// URLs. Please try on a different page.",
-      });
-    } else {
-      chrome.scripting.executeScript(
-        {
-          target: { tabId: tabs[0].id },
-          function: queryDOM,
-        },
-        (results) => {
-          if (chrome.runtime.lastError) {
-            console.error(chrome.runtime.lastError);
-            chrome.runtime.sendMessage({
-              type: "chatGPTResponse",
-              response:
-                "An error occurred while querying the DOM: " +
-                chrome.runtime.lastError.message,
-            });
-            return;
-          }
-          console.log("DOM:", results);
-          const domStructure = results[0].result;
-          chrome.runtime.sendMessage({
-            type: "domStructure",
-            domStructure: domStructure,
-          });
-          const systemPrompt =
-            "This is a input and button element from a webpage, is it a login page? \
-            If yes, return the element id for the username, password and submit/next button. \
-            output must be json object, has and only has three keys: username, password, submit; \
-            If it is not a login page, return a empty json object.";
-          sendChatGPTRequest(systemPrompt, domStructure, apiKey);
-        }
-      );
-    }
-  });
-}
+// function analyzeDOMWithChatGPT(apiKey) {
+//   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+//     if (tabs[0].url.startsWith("chrome://")) {
+//       chrome.runtime.sendMessage({
+//         type: "chatGPTResponse",
+//         response:
+//           "Unable to access chrome:// URLs. Please try on a different page.",
+//       });
+//     } else {
+//       chrome.scripting.executeScript(
+//         {
+//           target: { tabId: tabs[0].id },
+//           function: queryDOM,
+//         },
+//         (results) => {
+//           if (chrome.runtime.lastError) {
+//             console.error(chrome.runtime.lastError);
+//             chrome.runtime.sendMessage({
+//               type: "chatGPTResponse",
+//               response:
+//                 "An error occurred while querying the DOM: " +
+//                 chrome.runtime.lastError.message,
+//             });
+//             return;
+//           }
+//           console.log("DOM:", results);
+//           const domStructure = results[0].result;
+//           chrome.runtime.sendMessage({
+//             type: "domStructure",
+//             domStructure: domStructure,
+//           });
+//           const systemPrompt =
+//             "This is a input and button element from a webpage, is it a login page? \
+//             If yes, return the element id for the username, password and submit/next button. \
+//             output must be json object, has and only has three keys: username, password, submit; \
+//             If it is not a login page, return a empty json object.";
+//           sendChatGPTRequest(systemPrompt, domStructure, apiKey);
+//         }
+//       );
+//     }
+//   });
+// }
 
 function fillAndSubmitForm(formData) {
   console.log("fillAndSubmitForm", formData);
