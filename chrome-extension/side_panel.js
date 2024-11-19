@@ -147,30 +147,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     const cmd = message.action;
     if (cmd == 'summarize') {
       handleSummarizeClick();
-    } else if (cmd == 'click') {
-    let clickTerms = message.parameter;  
-    chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-      const currentTab = tabs[0];
-      console.log('Current tab:', currentTab);
-
-      chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-        chrome.scripting.executeScript({
-            target: {tabId: tabs[0].id},
-            function: grabHeadlines
-        }, (results) => {
-            if (results && results[0] && results[0].result) {
-                const headlines = results[0].result;
-                console.log("clickTerms: ", clickTerms);
-                openArticle(headlines, clickTerms);
-            }
-        });
-    });
-    });
-
-
-    // console.log(filterHeadlines(headlines, "biden apology to school native"));
-
     } 
+    
+    // else if (cmd == 'click') {
+    // let clickTerms = message.parameter;  
+    // chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+    //   const currentTab = tabs[0];
+    //   console.log('Current tab:', currentTab);
+
+    //   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    //     chrome.scripting.executeScript({
+    //         target: {tabId: tabs[0].id},
+    //         function: grabHeadlines
+    //     }, (results) => {
+    //         if (results && results[0] && results[0].result) {
+    //             const headlines = results[0].result;
+    //             console.log("clickTerms: ", clickTerms);
+    //             openArticle(headlines, clickTerms);
+    //         }
+    //     });
+    // });
+    // });
+    // } 
   }
 });
 

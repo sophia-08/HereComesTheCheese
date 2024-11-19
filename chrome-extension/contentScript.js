@@ -58,18 +58,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === "highlight_facts") {
     console.log("highlight_facts:", request.facts);
     highlightFacts(request.facts);
-  } else if (request.action === "grab_title") {
-    console.log("grab_title:");
-    grabHeadlines();
-  } else if (request.action === "click") {
-    console.log("click:", request.parameter);
-    let headLines = grabHeadlines();
-    console.log("headlines:", headLines);
-    if (headLines) {
-      console.log("click the headline with: ", request.parameter);
-      openArticle(headLines, request.parameter);
-    }
-  }
+  } 
+  
+  // else if (request.action === "grab_title") {
+  //   console.log("grab_title:");
+  //   grabHeadlines();
+  // } else if (request.action === "click") {
+  //   console.log("click:", request.parameter);
+  //   let headLines = grabHeadlines();
+  //   console.log("headlines:", headLines);
+  //   if (headLines) {
+  //     console.log("click the headline with: ", request.parameter);
+  //     openArticle(headLines, request.parameter);
+  //   }
+  // }
 });
 
 
