@@ -146,33 +146,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === "llm_result") {
     renderGptResult(JSON.parse(message.data));
   } 
-  else if (message.type == 'hid_cmd') {
-    const cmd = message.action;
-    if (cmd == 'summarize') {
-      handleSummarizeClick();
-    } 
+  // else if (message.type == 'hid_cmd') {
+  //   const cmd = message.action;
+  //   if (cmd == 'summarize') {
+  //     handleSummarizeClick();
+  //   } 
     
-    // else if (cmd == 'click') {
-    // let clickTerms = message.parameter;  
-    // chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-    //   const currentTab = tabs[0];
-    //   console.log('Current tab:', currentTab);
+  //   // else if (cmd == 'click') {
+  //   // let clickTerms = message.parameter;  
+  //   // chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+  //   //   const currentTab = tabs[0];
+  //   //   console.log('Current tab:', currentTab);
 
-    //   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
-    //     chrome.scripting.executeScript({
-    //         target: {tabId: tabs[0].id},
-    //         function: grabHeadlines
-    //     }, (results) => {
-    //         if (results && results[0] && results[0].result) {
-    //             const headlines = results[0].result;
-    //             console.log("clickTerms: ", clickTerms);
-    //             openArticle(headlines, clickTerms);
-    //         }
-    //     });
-    // });
-    // });
-    // } 
-  }
+  //   //   chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+  //   //     chrome.scripting.executeScript({
+  //   //         target: {tabId: tabs[0].id},
+  //   //         function: grabHeadlines
+  //   //     }, (results) => {
+  //   //         if (results && results[0] && results[0].result) {
+  //   //             const headlines = results[0].result;
+  //   //             console.log("clickTerms: ", clickTerms);
+  //   //             openArticle(headlines, clickTerms);
+  //   //         }
+  //   //     });
+  //   // });
+  //   // });
+  //   // } 
+  // }
 });
 
 // document.getElementById("sendChatGPTButton").addEventListener("click", () => {
@@ -205,80 +205,80 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 //   });
 // });
 
-async function handleSummarizeClick() {
-  try {
-    const [tab] = await chrome.tabs.query({
-      active: true,
-      currentWindow: true,
-    });
+// async function handleSummarizeClick() {
+//   try {
+//     const [tab] = await chrome.tabs.query({
+//       active: true,
+//       currentWindow: true,
+//     });
 
-    if (!tab) {
-      throw new Error("No active tab found");
-    }
+//     if (!tab) {
+//       throw new Error("No active tab found");
+//     }
 
-    // Inject the content script into the active tab
-    // await chrome.scripting.executeScript({
-    //   target: { tabId: tab.id },
-    //   files: ['contentScript.js']  
-    // });    
+//     // Inject the content script into the active tab
+//     // await chrome.scripting.executeScript({
+//     //   target: { tabId: tab.id },
+//     //   files: ['contentScript.js']  
+//     // });    
 
-    const response = await chrome.tabs.sendMessage(tab.id, {
-      action: "getDOMContent",
-    });
+//     const response = await chrome.tabs.sendMessage(tab.id, {
+//       action: "getDOMContent",
+//     });
 
-    // console.log("getDOMContent response=", response);
-    console.log(`%c[side.js] getDOMContent response=${response}`, logStyle);
-    if (response && response.content) {
-      // document.getElementById("summary").textContent = response.content.textContent;
+//     // console.log("getDOMContent response=", response);
+//     console.log(`%c[side.js] getDOMContent response=${response}`, logStyle);
+//     if (response && response.content) {
+//       // document.getElementById("summary").textContent = response.content.textContent;
 
-      systemPrompt = "Please summarize, and identify up to 5 sections that are assert fact and most related. Please reply with a json object containing a \"summary\" and \"facts\" key.  The value of \"summary\" is a short summary of the text. The value of \"facts\" is an array value of exact string matches to the original text. The facts must be exact matches of the sentence fragments from the original text. This \"facts\" will later be used by a chrome extension to mark spans of the original text, so the fact strings must be exact matches of the original text. The response shall only has the JSON object, nothing else."
-      chrome.storage.local.get(["chatgptApiKey"], (result) => {
-        if (result.chatgptApiKey) {
-          chrome.runtime.sendMessage({
-            type: "summarize",
-            apiKey: result.chatgptApiKey,
-            userPrompt: response.content.textContent,
-            systemPrompt: systemPrompt
-          }).then(result1 => {
-            console.log("chatgptResult: ", result1.data);
-            // document.getElementById("chatgptResult").textContent = result1.data;
-            try {
-              renderGptResult(JSON.parse(result1.data));
+//       systemPrompt = "Please summarize, and identify up to 5 sections that are assert fact and most related. Please reply with a json object containing a \"summary\" and \"facts\" key.  The value of \"summary\" is a short summary of the text. The value of \"facts\" is an array value of exact string matches to the original text. The facts must be exact matches of the sentence fragments from the original text. This \"facts\" will later be used by a chrome extension to mark spans of the original text, so the fact strings must be exact matches of the original text. The response shall only has the JSON object, nothing else."
+//       chrome.storage.local.get(["chatgptApiKey"], (result) => {
+//         if (result.chatgptApiKey) {
+//           chrome.runtime.sendMessage({
+//             type: "summarize",
+//             apiKey: result.chatgptApiKey,
+//             userPrompt: response.content.textContent,
+//             systemPrompt: systemPrompt
+//           }).then(result1 => {
+//             console.log("chatgptResult: ", result1.data);
+//             // document.getElementById("chatgptResult").textContent = result1.data;
+//             try {
+//               renderGptResult(JSON.parse(result1.data));
 
-              //highlight facts
-              chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-                if (tabs[0]) {
-                  chrome.tabs.sendMessage(tabs[0].id, {
-                    target: 'content-script',
-                    action: "highlight_facts",
-                    facts: JSON.parse(result1.data).facts
-                  });
-                }
-              });
+//               //highlight facts
+//               chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+//                 if (tabs[0]) {
+//                   chrome.tabs.sendMessage(tabs[0].id, {
+//                     target: 'content-script',
+//                     action: "highlight_facts",
+//                     facts: JSON.parse(result1.data).facts
+//                   });
+//                 }
+//               });
 
 
-            } catch (error) {
-              console.error("Error: chatgptResult:", error);
-            }
+//             } catch (error) {
+//               console.error("Error: chatgptResult:", error);
+//             }
 
-          }).catch(error => {
-            // Handle any errors here
-            console.error('Error:', error);
-          });
-        } else {
-          document.getElementById("chatgptResult").textContent =
-            "Please set your API key first.";
-        }
-      });
+//           }).catch(error => {
+//             // Handle any errors here
+//             console.error('Error:', error);
+//           });
+//         } else {
+//           document.getElementById("chatgptResult").textContent =
+//             "Please set your API key first.";
+//         }
+//       });
 
-    } else {
-      throw new Error("Failed to get DOM content");
-    }
-  } catch (error) {
-    console.error("Error:", error);
-    document.getElementById("summary").textContent = "Error: " + error.message;
-  }
-};
+//     } else {
+//       throw new Error("Failed to get DOM content");
+//     }
+//   } catch (error) {
+//     console.error("Error:", error);
+//     document.getElementById("summary").textContent = "Error: " + error.message;
+//   }
+// };
 
 // document.getElementById("summarize").addEventListener("click", handleSummarizeClick);
 
