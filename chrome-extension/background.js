@@ -51,24 +51,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     case "wordUnderCursor":
       console.log("wordUnderCursor:", message.word);
       break;
-    case "summarize":
-      // Return true to indicate we'll send a response asynchronously
-      (async () => {
-        try {
-          const result = await askLLM(
-            message.systemPrompt,
-            message.userPrompt,
-            message.apiKey
-          );
-          console.log("chrome.runtime.onMessage sendResponse", result);
-          sendResponse({ success: true, data: result });
-        } catch (error) {
-          console.error("Error in summarize:", error);
-          sendResponse({ success: false, error: error.message });
-        }
-      })();
-      return true;
-      break;
+    // case "summarize":
+    //   // Return true to indicate we'll send a response asynchronously
+    //   (async () => {
+    //     try {
+    //       const result = await askLLM(
+    //         message.systemPrompt,
+    //         message.userPrompt,
+    //         message.apiKey
+    //       );
+    //       console.log("chrome.runtime.onMessage sendResponse", result);
+    //       sendResponse({ success: true, data: result });
+    //     } catch (error) {
+    //       console.error("Error in summarize:", error);
+    //       sendResponse({ success: false, error: error.message });
+    //     }
+    //   })();
+    //   return true;
+    //   break;
     case "LOG":
       const logStyle =
         "background: #a0a0a0; color: #000; padding: 2px 5px; border-radius: 3px;";
@@ -459,6 +459,6 @@ async function summarizeHandler() {
       throw new Error("Failed to get DOM content");
     }
   } catch (error) {
-    console.error("Error:", error);
+    console.error("summarizeHandler:", error);
   }
 }
