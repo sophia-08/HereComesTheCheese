@@ -422,7 +422,6 @@ async function summarizeHandler() {
             );
             
             console.log("chatgptResult: ", llmResult);
-            
             try {
               const parsedResult = JSON.parse(llmResult);
               //highlight facts
@@ -437,6 +436,17 @@ async function summarizeHandler() {
               });
             } catch (error) {
               console.error("Error parsing chatgptResult:", error);
+            }
+
+            try {
+              // send llmResult to sidepanel
+              chrome.runtime.sendMessage({
+                type: "llm_result",
+                target: "side-panel",
+                data: llmResult,
+              });
+            } catch (error) {
+              console.error("send llmResult to sidepanel: ", error);
             }
           } catch (error) {
             console.error('Error calling LLM:', error);

@@ -143,7 +143,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   } else if (message.type === "chatGPTResponse") {
     const resultDiv = document.getElementById("chatgptResult");
     resultDiv.textContent = message.response;
-  } else if (message.type == 'hid_cmd') {
+  } else if (message.type === "llm_result") {
+    renderGptResult(JSON.parse(message.data));
+  } 
+  else if (message.type == 'hid_cmd') {
     const cmd = message.action;
     if (cmd == 'summarize') {
       handleSummarizeClick();
