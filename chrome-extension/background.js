@@ -299,12 +299,13 @@ function handleHidCmd(cmd, parameter) {
       // chrome.windows.getCurrent({ populate: true }, (window) => {
       //   chrome.sidePanel.open({ windowId: window.id });
       // });
-    // send cmd to sidepanel
-    chrome.runtime.sendMessage({
-      type: "hid_cmd",
-      target: "side-panel",
-      action: cmd,
-    });
+    // // send cmd to sidepanel
+    // chrome.runtime.sendMessage({
+    //   type: "hid_cmd",
+    //   target: "side-panel",
+    //   action: cmd,
+    // });
+    summarizeHandler();
   } else if (cmd == "click") {
     // send cmd to sidepanel
     // chrome.runtime.sendMessage({
@@ -386,5 +387,68 @@ async function askLLM(systemPrompt, userPrompt, apiKey) {
       response:
         "Error: Unable to get response from ChatGPT. Please check your API key and try again.",
     });
+  }
+}
+
+async function summarizeHandler() {
+  try {
+    const [tab] = await chrome.tabs.query({
+      active: true,
+      currentWindow: true,
+    });
+
+    if (!tab) {
+      throw new Error("No active tab found");
+    }
+
+    const response = await chrome.tabs.sendMessage(tab.id, {
+      action: "getDOMContent",
+    });
+
+    console.log("getDOMContent response=", response);
+    
+    if (response && response.content) {
+      const systemPrompt = "Please summarize, and identify up to 5 sections that are assert fact and most related. Please reply with a json object containing a \"summary\" and \"facts\" key.  The value of \"summary\" is a short summary of the text. The value of \"facts\" is an array value of exact string matches to the original text. The facts must be exact matches of the sentence fragments from the original text. This \"facts\" will later be used by a chrome extension to mark spans of the original text, so the fact strings must be exact matches of the original text. The response shall only has the JSON object, nothing else."
+      
+      chrome.storage.local.get(["chatgptApiKey"], async (result) => {
+        console.log("Get chatgpt key", result);
+        if (result.chatgptApiKey) {
+          try {
+            // Directly call askLLM instead of sending a message
+            const llmResult = await askLLM(
+              systemPrompt,
+              response.content.textContent,
+              result.chatgptApiKey
+            );
+            
+            console.log("chatgptResult: ", llmResult);
+            
+            try {
+              const parsedResult = JSON.parse(llmResult);
+              //highlight facts
+              chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+                if (tabs[0]) {
+                  chrome.tabs.sendMessage(tabs[0].id, {
+                    target: 'content-script',
+                    action: "highlight_facts",
+                    facts: parsedResult.facts
+                  });
+                }
+              });
+            } catch (error) {
+              console.error("Error parsing chatgptResult:", error);
+            }
+          } catch (error) {
+            console.error('Error calling LLM:', error);
+          }
+        } else {
+          console.error("No API key found");
+        }
+      });
+    } else {
+      throw new Error("Failed to get DOM content");
+    }
+  } catch (error) {
+    console.error("Error:", error);
   }
 }
