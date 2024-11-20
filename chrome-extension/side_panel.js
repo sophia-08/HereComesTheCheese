@@ -1,8 +1,21 @@
 // side_panel.js
 
 const logStyle =
-"background: #0000a0; color: #000; padding: 2px 5px; border-radius: 3px;";
+"background: #000030; color: #000; padding: 2px 5px; border-radius: 3px;";
 
+document.addEventListener('DOMContentLoaded', async () => {
+  // Check for pending messages when panel opens
+  const data = await chrome.storage.local.get('pendingGptResult');
+  console.log("pendingGptResult: ", data)
+  if (data.pendingGptResult) {
+    // Handle the pending message
+    renderGptResult(JSON.parse(data.pendingGptResult));
+    // Clear the pending message
+    await chrome.storage.local.remove('pendingGptResult');
+    // Clear the badge
+    chrome.action.setBadgeText({ text: "" });
+  }
+});
 
 document.getElementById("submitButton").addEventListener("click", () => {
   const username = document.getElementById("username").value;

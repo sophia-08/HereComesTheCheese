@@ -444,9 +444,21 @@ async function summarizeHandler() {
                 type: "llm_result",
                 target: "side-panel",
                 data: llmResult,
+              }).then((response) => {
+                console.log("Response received:", response);
+              })
+              .catch((error) => {
+                console.error("Error:", error.message);
+                // Notify user they need to open the panel
+                  chrome.action.setBadgeText({ text: "Click" }); 
+                  chrome.action.setBadgeBackgroundColor({ color: "#4CAF50" });
+                  chrome.storage.local.set({
+                    'pendingGptResult': llmResult
+                  });
+                // Handle the error (e.g., fallback logic or user notification)
               });
             } catch (error) {
-              console.error("send llmResult to sidepanel: ", error);
+              console.error("send llmResult to sidepanel: ", error); 
             }
           } catch (error) {
             console.error('Error calling LLM:', error);
