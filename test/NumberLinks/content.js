@@ -1,9 +1,14 @@
+/**
+ * LinkVisualizer class handles the visual representation of links on the webpage
+ * Provides different styles for visualizing numbered links
+ */
 class LinkVisualizer {
+    // Static object containing different visualization methods
     static visualizationStyles = {
-        // 1. Minimal Overlay
+        // 1. Minimal Overlay style - adds a small circular number overlay
         minimal(link, index) {
-            // link.style.position = 'relative';
             const overlay = document.createElement('span');
+            // Set CSS styles for circular overlay
             overlay.style.cssText = `
                 position: absolute;
                 top: -5px;
@@ -24,14 +29,16 @@ class LinkVisualizer {
             link.parentNode.insertBefore(overlay, link);
         },
 
-        // 2. Colorful Badge
+        // 2. Colorful Badge style - adds colored border and background effects
         colorful(link, index) {
+            // Array of colors for rotation
             const colors = [
                 '#3498db', '#2ecc71', '#e74c3c', 
                 '#f39c12', '#9b59b6', '#1abc9c'
             ];
             const color = colors[index % colors.length];
             
+            // Apply styles to link
             link.style.cssText += `
                 position: relative;
                 padding-left: 25px;
@@ -42,12 +49,13 @@ class LinkVisualizer {
             link.title = `Link #${index}`;
         },
 
-        // 3. Tooltip Style
+        // 3. Tooltip style - adds hoverable tooltip with link number
         tooltip(link, index) {
             link.setAttribute('data-link-index', index);
             link.style.position = 'relative';
             link.style.cursor = 'help';
             
+            // Create tooltip element
             const tooltip = document.createElement('span');
             tooltip.style.cssText = `
                 visibility: hidden;
@@ -66,6 +74,7 @@ class LinkVisualizer {
             `;
             tooltip.textContent = `Link #${index}`;
             
+            // Add hover event listeners
             link.addEventListener('mouseenter', () => {
                 tooltip.style.visibility = 'visible';
                 tooltip.style.opacity = '1';
@@ -79,15 +88,9 @@ class LinkVisualizer {
             link.appendChild(tooltip);
         },
 
-        // 4. Highlight with Number
+        // 4. Highlight with Number style - adds numbered badge inline with link text
         highlight(link, index) {
-            const originalBg = link.style.backgroundColor;
-            const originalColor = link.style.color;
-            
-            // link.style.transition = 'all 0.3s ease';
-            // link.style.backgroundColor = 'rgba(52, 152, 219, 0.1)';
-            // link.style.borderBottom = '2px dotted #3498db';
-            
+            // Create number badge
             const numberSpan = document.createElement('span');
             numberSpan.style.cssText = `
                 background-color: #3498db;
@@ -104,10 +107,16 @@ class LinkVisualizer {
         }
     };
 
+    /**
+     * Applies the specified visualization style to a link
+     * @param {HTMLElement} link - The link element to style
+     * @param {number} index - The link's index number
+     * @param {string} style - The visualization style to apply
+     */
     static applyVisualization(link, index, style = 'highlight') {
-        // Remove any previous numbering
+        // Check if link was already processed
         if (link.getAttribute('data-link-index')) {
-            return; // Already processed
+            return;
         }
 
         // Apply the chosen visualization style
@@ -118,38 +127,13 @@ class LinkVisualizer {
     }
 }
 
-// Key improvements in this version:
-
-// Immediate Processing:
-
-// Scans for links as soon as the DOM is loaded
-// Doesn't wait for any timeout period
-// Processes existing links immediately
-
-
-// Progressive Updates:
-
-// Processes new links as they're added to the DOM
-// Keeps track of already processed links to avoid duplicates
-// Updates numbering sequentially as new links are found
-
-
-// Efficient Processing:
-
-// Only processes new elements and their children
-// Maintains a Set of processed links to avoid duplicates
-// No need to re-scan the entire page when new content is added
-
-
-// Better Organization:
-
-// Class-based structure for better state management
-// Clear separation of responsibilities
-// Easy to extend with new features
-
+/**
+ * LinkExtractor class handles finding, processing, and managing links on the webpage
+ */
 class LinkExtractor {
     constructor() {
-        this.processedLinks = new Set(); // Track processed links
+        // Initialize properties
+        this.processedLinks = new Set(); // Track processed links to avoid duplicates
         this.linkCount = 0;
         this.observer = null;
         
@@ -161,19 +145,24 @@ class LinkExtractor {
             pageTitle: document.title
         };
 
+        // Setup functionality
         this.setupMessageListener();
         this.setupObserver();
         this.initialScan();
     }
 
+    /**
+     * Sets up message listener for communication with background script
+     */
     setupMessageListener() {
-        // Listen for messages from background script
         chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             console.log('Received message:', message);
             
             if (typeof message === 'object' && message !== null) {
+                // Handle different message actions
                 switch (message.action) {
                     case 'NAVIGATE_TO_LINK':
+                        // Handle link navigation
                         if (typeof message.linkIndex === 'number') {
                             const result = this.navigateToLink(message.linkIndex);
                             sendResponse(result);
@@ -186,6 +175,7 @@ class LinkExtractor {
                         break;
 
                     case 'GET_LINKS':
+                        // Return all links
                         sendResponse({
                             success: true,
                             data: this.linkCollection
@@ -193,6 +183,7 @@ class LinkExtractor {
                         break;
 
                     case 'GET_LINK_INFO':
+                        // Return specific link info
                         if (typeof message.linkIndex === 'number') {
                             const link = this.getLinkById(message.linkIndex);
                             sendResponse({
@@ -221,10 +212,15 @@ class LinkExtractor {
                 });
             }
             
-            return true; // Keep the message channel open for async response
+            return true; // Keep message channel open for async response
         });
     }
 
+    /**
+     * Navigates to a specific link by index
+     * @param {number} index - The index of the link to navigate to
+     * @returns {Object} Result of navigation attempt
+     */
     navigateToLink(index) {
         const link = this.getLinkById(index);
         if (!link) {
@@ -237,7 +233,7 @@ class LinkExtractor {
         try {
             console.log(`Navigating to link [${index}]:`, link.url);
             
-            // Check if it's a valid URL
+            // Try URL navigation first
             if (link.url && (link.url.startsWith('http') || link.url.startsWith('/'))) {
                 window.location.href = link.url;
                 return {
@@ -247,9 +243,9 @@ class LinkExtractor {
                         method: 'location'
                     }
                 };
-            } else if (link.element && link.element.click) {
-                // Try clicking the element if URL is invalid
-                console.log(`Attempting to click element for link [${index}]`);
+            } 
+            // Fall back to click() method
+            else if (link.element && link.element.click) {
                 link.element.click();
                 return {
                     success: true,
@@ -258,7 +254,9 @@ class LinkExtractor {
                         method: 'click'
                     }
                 };
-            } else {
+            } 
+            // Navigation not possible
+            else {
                 return {
                     success: false,
                     error: 'Unable to navigate: Invalid URL and no clickable element'
@@ -272,6 +270,9 @@ class LinkExtractor {
         }
     }
 
+    /**
+     * Sets up MutationObserver to watch for DOM changes
+     */
     setupObserver() {
         this.observer = new MutationObserver((mutations) => {
             for (const mutation of mutations) {
@@ -285,13 +286,20 @@ class LinkExtractor {
             }
         });
 
+        // Start observing the document body
         this.observer.observe(document.body, {
             childList: true,
             subtree: true
         });
     }
 
+    /**
+     * Processes a single link element
+     * @param {HTMLElement} link - The link element to process
+     * @returns {boolean} Whether the link was processed successfully
+     */
     processLink(link) {
+        // Skip if already processed
         if (this.processedLinks.has(link)) {
             return false;
         }
@@ -300,6 +308,7 @@ class LinkExtractor {
         const ariaLabel = link.getAttribute('aria-label');
         const title = link.getAttribute('title');
 
+        // Only process links with content
         if (textContent.length > 0 || ariaLabel || title) {
             this.linkCount++;
             const originalText = link.textContent;
@@ -330,7 +339,7 @@ class LinkExtractor {
             // Apply visualization
             LinkVisualizer.applyVisualization(link, this.linkCount, 'highlight');
 
-            // Store reference to DOM element (optional)
+            // Store reference to DOM element
             linkInfo.element = link;
 
             return true;
@@ -339,6 +348,11 @@ class LinkExtractor {
         return false;
     }
 
+    /**
+     * Determines the type of link element
+     * @param {HTMLElement} link - The link element
+     * @returns {string} The type of link
+     */
     getLinkType(link) {
         if (link.tagName === 'A') return 'anchor';
         if (link.getAttribute('role') === 'link') return 'aria-link';
@@ -347,6 +361,11 @@ class LinkExtractor {
         return 'other';
     }
 
+    /**
+     * Gets the CSS selector path to an element
+     * @param {HTMLElement} element - The element to get the path for
+     * @returns {string} The CSS selector path
+     */
     getElementPath(element) {
         const path = [];
         while (element && element.nodeType === Node.ELEMENT_NODE) {
@@ -367,6 +386,10 @@ class LinkExtractor {
         return path.join(' > ');
     }
 
+    /**
+     * Processes a new element and its children for links
+     * @param {HTMLElement} element - The element to process
+     */
     processNewElement(element) {
         if (this.isLinkElement(element)) {
             this.processLink(element);
@@ -376,6 +399,11 @@ class LinkExtractor {
         linkElements.forEach(link => this.processLink(link));
     }
 
+    /**
+     * Checks if an element is a link
+     * @param {HTMLElement} element - The element to check
+     * @returns {boolean} Whether the element is a link
+     */
     isLinkElement(element) {
         return (
             element.tagName === 'A' ||
@@ -385,6 +413,11 @@ class LinkExtractor {
         );
     }
 
+    /**
+     * Finds all link elements within an element
+     * @param {HTMLElement} element - The element to search within
+     * @returns {Array} Array of link elements
+     */
     findLinkElements(element) {
         return [
             ...element.getElementsByTagName('a'),
@@ -394,6 +427,9 @@ class LinkExtractor {
         ];
     }
 
+    /**
+     * Performs initial scan of the page for links
+     */
     initialScan() {
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => {
@@ -406,6 +442,9 @@ class LinkExtractor {
         }
     }
 
+    /**
+     * Disconnects the MutationObserver
+     */
     disconnect() {
         if (this.observer) {
             this.observer.disconnect();
@@ -413,7 +452,7 @@ class LinkExtractor {
         }
     }
 
-    // Methods to access stored links
+    // Utility methods for accessing stored links
     getAllLinks() {
         return this.linkCollection;
     }
@@ -429,7 +468,10 @@ class LinkExtractor {
         );
     }
 
-    // Export links to various formats
+    /**
+     * Exports link collection to JSON format
+     * @returns {string} JSON string of link collection
+     */
     exportToJSON() {
         return JSON.stringify(this.linkCollection, (key, value) => {
             // Skip DOM element references when stringifying
@@ -438,6 +480,10 @@ class LinkExtractor {
         }, 2);
     }
 
+    /**
+     * Exports link collection to CSV format
+     * @returns {string} CSV string of link collection
+     */
     exportToCSV() {
         const headers = ['id', 'text', 'url', 'type', 'title', 'ariaLabel'];
         const csv = [
@@ -452,25 +498,5 @@ class LinkExtractor {
     }
 }
 
-// Usage example:
+// Initialize the link extractor
 const linkExtractor = new LinkExtractor();
-
-// Access links later
-// setTimeout(() => {
-//     // Get all links
-//     const allLinks = linkExtractor.getAllLinks();
-//     console.log('Collected links:', allLinks);
-
-//     // Export to JSON
-//     const jsonExport = linkExtractor.exportToJSON();
-//     console.log('JSON export:', jsonExport);
-
-//     // Export to CSV
-//     const csvExport = linkExtractor.exportToCSV();
-//     console.log('CSV export:', csvExport);
-
-//     // Find specific links
-//     const searchResults = linkExtractor.getLinksByText('example');
-//     console.log('Search results:', searchResults);
-// }, 5000);
-
