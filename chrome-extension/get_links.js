@@ -1,13 +1,25 @@
 // content-script.js
 
+// processedSet = new Set();
+// const visibleLinks = [];
+// count=1;
 // Main function to get viewport links (remains the same)
 function getViewportLinks() {
     const viewportHeight = window.innerHeight;
     const viewportWidth = window.innerWidth;
     const links = document.getElementsByTagName('a');
-    const visibleLinks = [];
+
 
     for (let link of links) {
+        // if (processedSet.has(link.href)) {
+        //     continue;
+        // }
+
+        // text = link.innerText;
+        // if (text.trim().length == 0) continue;
+        // processedSet.add(link.href);
+        // link.innerText=  `[${count}] ${text}`;
+        // count += 1;
         if (isElementSufficientlyVisible(link, 0.3) && isElementVisible(link)) {
             const rect = link.getBoundingClientRect();
             visibleLinks.push({
@@ -44,6 +56,7 @@ function isElementSufficientlyVisible(element, threshold = 0.3) {
     const visibleArea = visibleWidth * visibleHeight;
     const visibilityRatio = visibleArea / totalArea;
 
+    // return true;
     return visibilityRatio >= threshold;
 }
 
@@ -177,3 +190,25 @@ function initializeLinkTracking() {
 
 // Start tracking
 initializeLinkTracking();
+
+
+// const links = document.querySelectorAll('a');
+
+// // Loop through each link
+// // links.forEach((link,index) => {
+// //     // Prepend the number "1" to the link's text content
+// //     link.textContent = "[" + String(index+1) + "] " + link.textContent;
+// // });
+// const linksWithoutImages = Array.from(links).filter(link => {
+//     return link.textContent.trim().length > 0;
+//     // return link.querySelector('img') === null; // Check if no <img> exists in the link
+// });
+
+// // Log the filtered links
+// // console.log('Links without images:', linksWithoutImages);
+
+// // Highlight links without images for visualization
+// linksWithoutImages.forEach((link, index) => {
+//     console.log('L ', index+1, ":" ,link.textContent);
+//     link.textContent = "[" + String(index+1) + "] " + link.textContent;
+// });
