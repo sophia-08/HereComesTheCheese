@@ -1,9 +1,15 @@
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-    if (request.action === "signal_from_popup") {
-      console.log("Received message:", request.action);
-      sendResponse({ response: "Hello from background!" });
-    }
-  });
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  console.log("background message", message);
+  switch (message.type) {
+    case "LOG":
+      const logStyle =
+        "background: #a0a0a0; color: #000; padding: 2px 5px; border-radius: 3px;";
+      console.log(`%c[content.js] ${message.data.message}`, logStyle);
+      // console.log(message.data.message);
+      break;
+  }
+});
 
 
 // chrome.tabs.sendMessage(tabId, {

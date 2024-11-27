@@ -1,3 +1,42 @@
+const customLog = (...args) => {
+    // Convert any non-string arguments to strings for serialization
+    const serializedArgs = args.map((arg) => {
+      if (typeof arg === "object") {
+        try {
+          return JSON.stringify(arg);
+        } catch (e) {
+          return String(arg);
+        }
+      }
+      return String(arg);
+    });
+  
+    // Create a timestamp
+    const timestamp = new Date().toISOString();
+  
+    // Create the log message
+    const logMessage = {
+      // timestamp,
+      type: "log",
+      source: "content.js",
+      message: serializedArgs.join(" "),
+      // stack: new Error().stack
+    };
+  
+    // Send message to background script
+    chrome.runtime
+      .sendMessage({
+        type: "LOG",
+        data: logMessage,
+      })
+      .catch((error) => {
+        // Fallback to console.log if messaging fails
+        console.log("[CustomLog Failed]", ...args, error);
+      });
+  };
+  
+  console.log = customLog;
+
 /**
  * LinkVisualizer class handles the visual representation of links on the webpage
  * Provides different styles for visualizing numbered links
