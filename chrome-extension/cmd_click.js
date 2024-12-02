@@ -1,3 +1,15 @@
+
+
+/**
+ * cmd_click.js - Voice Command Link Navigation System
+ * 
+ * This module implements an intelligent link matching and navigation system that:
+ * - Maintains a record of visible links on the current page
+ * - Uses fuzzy string matching to find links based on voice/text input
+ * - Implements sophisticated keyword extraction and matching algorithms
+ * - Provides detailed logging for debugging and monitoring
+ */
+
 // This implementation of "click":
 
 // Stores the last known visible links in memory
@@ -17,17 +29,30 @@
 // Handles variations in word order
 
 
-
-// Store the last known visible links
+/**
+ * Array to maintain references to all currently visible links on the page.
+ * Each link object should contain at least {text: string, url: string}
+ */
 let lastVisibleLinks = [];
 
-// Common words to ignore in matching
+/**
+ * Set of common English words that should be ignored during keyword matching
+ * to improve the quality of matches by focusing on meaningful content words.
+ */
 const COMMON_WORDS = new Set([
   'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
   'of', 'with', 'by', 'from', 'up', 'about', 'into', 'over', 'after'
 ]);
 
-// Function to calculate Levenshtein distance for fuzzy matching
+/**
+ * Calculates the Levenshtein (edit) distance between two strings.
+ * This metric represents the minimum number of single-character edits required
+ * to transform one string into another.
+ * 
+ * @param {string} str1 - First string to compare
+ * @param {string} str2 - Second string to compare
+ * @returns {number} The Levenshtein distance between the strings
+ */
 function levenshteinDistance(str1, str2) {
   const m = str1.length;
   const n = str2.length;
@@ -42,9 +67,9 @@ function levenshteinDistance(str1, str2) {
         dp[i][j] = dp[i - 1][j - 1];
       } else {
         dp[i][j] = Math.min(
-          dp[i - 1][j - 1] + 1,
-          dp[i - 1][j] + 1,
-          dp[i][j - 1] + 1
+          dp[i - 1][j - 1] + 1,  // substitution
+          dp[i - 1][j] + 1,      // deletion
+          dp[i][j - 1] + 1       // insertion
         );
       }
     }
@@ -52,7 +77,16 @@ function levenshteinDistance(str1, str2) {
   return dp[m][n];
 }
 
-// Function to get meaningful words from a string
+/**
+ * Extracts meaningful keywords from a text string by:
+ * - Converting to lowercase
+ * - Removing punctuation
+ * - Splitting into words
+ * - Filtering out common words and very short words
+ * 
+ * @param {string} text - Input text to process
+ * @returns {string[]} Array of extracted keywords
+ */
 function getKeywords(text) {
   return text.toLowerCase()
     .replace(/[^\w\s]/g, '') // Remove punctuation
@@ -63,7 +97,15 @@ function getKeywords(text) {
     );
 }
 
-// Function to calculate match score between input and link text
+/**
+ * Calculates how well the input keywords match against a set of link keywords.
+ * Uses fuzzy string matching with Levenshtein distance to handle
+ * minor variations and typos in the input.
+ * 
+ * @param {string[]} inputKeywords - Keywords from user input
+ * @param {string[]} linkKeywords - Keywords from link text
+ * @returns {Object} Score and detailed matching information
+ */
 function calculateMatchScore(inputKeywords, linkKeywords) {
   let matchedWords = 0;
   let matchDetails = [];
@@ -102,7 +144,17 @@ function calculateMatchScore(inputKeywords, linkKeywords) {
   };
 }
 
-// Function to find best matching link
+/**
+ * Main function to find the best matching link based on user input.
+ * Implements the core matching logic by:
+ * 1. Extracting keywords from input
+ * 2. Comparing against all visible links
+ * 3. Finding the best match above the threshold
+ * 4. Providing detailed logging of the matching process
+ * 
+ * @param {string} userInput - Raw user input to match against links
+ * @returns {Object|null} Best matching link object or null if no good match found
+ */
 function findBestMatch(userInput) {
   console.log('Processing voice input:', userInput);
 
@@ -150,4 +202,3 @@ function findBestMatch(userInput) {
   // Return the match only if more than 40% of keywords matched
   return bestMatch.score > 0.4 ? bestMatch.link : null;
 }
-
