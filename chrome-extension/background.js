@@ -281,22 +281,27 @@ async function summarizeHandler() {
 
             try {
               // send llmResult to sidepanel
-              const response = await chrome.runtime.sendMessage({
+              chrome.runtime
+                .sendMessage({
                   type: "llm_result",
                   target: "side-panel",
                   data: llmResult,
-              });
-              console.log("Response received:", response);
+                })
+                .then((response) => {
+                  console.log("Response received:", response);
+                })
+                .catch((error) => {
+                  console.error("Error:", error.message);
+                  // Notify user they need to open the panel
+                  chrome.action.setBadgeText({ text: "Click" });
+                  chrome.action.setBadgeBackgroundColor({ color: "#4CAF50" });
+                  chrome.storage.local.set({
+                    pendingGptResult: llmResult,
+                  });
+                });
             } catch (error) {
-                console.error("Error:", error.message);
-                // Notify user they need to open the panel
-                await Promise.all([
-                    chrome.action.setBadgeText({ text: "Click" }),
-                    chrome.action.setBadgeBackgroundColor({ color: "#4CAF50" }),
-                    chrome.storage.local.set({ pendingGptResult: llmResult })
-                ]);
+              console.error("send llmResult to sidepanel: ", error);
             }
-            
           } catch (error) {
             console.error("Error calling LLM:", error);
           }
