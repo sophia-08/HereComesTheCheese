@@ -58,7 +58,8 @@ void InputHandler::processAudioData() {
   try {
     saveWavFile(m_pcm_data, "out.wav");
 
-    std::string transcription = m_whisper_client.transcribe(m_pcm_data);
+    std::string transcription;
+    transcription = m_whisper_client.transcribe(m_pcm_data);
     // clang-format off
         // transcription = "Remind me at 6pm to dinner";
 
@@ -69,6 +70,8 @@ void InputHandler::processAudioData() {
         // transcription = "schedule a meeting with lily at 2pm for a quick sync up";        
 
         // transcription = "Summarize";
+
+        // transcription = "click technology";
 
         // transcription = "play you raise me up on youtube";
 
