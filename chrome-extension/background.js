@@ -247,7 +247,7 @@ async function summarizeHandler() {
     console.log("getDOMContent response=", response);
 
     if (response && response.content) {
-      const systemPrompt = "Please summarize, and identify up to 5 sections that are assert fact and most related. Please reply with a json object containing a \"summary\" and \"facts\" key.  The value of \"summary\" is a short summary of the text. The value of \"facts\" is an array value of exact string matches to the original text. The facts must be exact matches of the sentence fragments from the original text. This \"facts\" will later be used by a chrome extension to mark spans of the original text, so the fact strings must be exact matches of the original text. The response shall only has the JSON object, nothing else."
+      const systemPrompt = "Please summarize and identify up to 5 sections that are factual and most related. Please reply with a JSON object containing a \"summary\" and \"facts\" key.  The value of \"summary\" is a short summary of the text. The value of \"facts\" is an array value of of strings that exactly match to the original text. The facts must be exact matches of the sentences from the original text. This \"facts\" will later be used by a chrome extension to mark spans of the original text, so the fact strings must be exact matches of the original text. The response should only have the JSON object, nothing else."
       chrome.storage.local.get(["chatgptApiKey"], async (result) => {
         console.log("Get chatgpt key", result);
         if (result.chatgptApiKey) {
