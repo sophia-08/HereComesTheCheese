@@ -1,4 +1,3 @@
-
 const customLog = (...args) => {
   // Convert any non-string arguments to strings for serialization
   const serializedArgs = args.map((arg) => {
@@ -54,12 +53,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // sendResponse({ content: extractTextContent() });
     sendResponse({ content: processArticle() });
   } else if (request.action === "definition") {
-    definitionHandler() ;
+    definitionHandler();
   } else if (request.action === "highlight_facts") {
     console.log("highlight_facts:", request.facts);
     highlightFacts(request.facts);
-  } 
-  
+  }
+
   // else if (request.action === "grab_title") {
   //   console.log("grab_title:");
   //   grabHeadlines();
@@ -73,7 +72,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   //   }
   // }
 });
-
 
 // Track the last known mouse position
 document.addEventListener(
