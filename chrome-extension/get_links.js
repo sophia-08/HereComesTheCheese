@@ -190,25 +190,3 @@ function initializeLinkTracking() {
 
 // Start tracking
 initializeLinkTracking();
-
-
-// const links = document.querySelectorAll('a');
-
-// // Loop through each link
-// // links.forEach((link,index) => {
-// //     // Prepend the number "1" to the link's text content
-// //     link.textContent = "[" + String(index+1) + "] " + link.textContent;
-// // });
-// const linksWithoutImages = Array.from(links).filter(link => {
-//     return link.textContent.trim().length > 0;
-//     // return link.querySelector('img') === null; // Check if no <img> exists in the link
-// });
-
-// // Log the filtered links
-// // console.log('Links without images:', linksWithoutImages);
-
-// // Highlight links without images for visualization
-// linksWithoutImages.forEach((link, index) => {
-//     console.log('L ', index+1, ":" ,link.textContent);
-//     link.textContent = "[" + String(index+1) + "] " + link.textContent;
-// });
